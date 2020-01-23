@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using App.Metrics;
+using App.Metrics.Registry;
 using Prometheus.DotNetRuntime.StatsCollectors;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
-#if PROMV2
-using TCollectorRegistry = Prometheus.Advanced.DefaultCollectorRegistry;
-#elif PROMV3
-using TCollectorRegistry = Prometheus.CollectorRegistry;
-#endif
 
 namespace Prometheus.DotNetRuntime
 {
@@ -21,9 +18,9 @@ namespace Prometheus.DotNetRuntime
         /// to begin collecting metrics.
         /// </summary>
         /// <returns></returns>
-        public static Builder Default()
+        public static Builder Default(IMetrics metrics)
         {
-            return Customize()
+            return Customize(metrics)
                 .WithContentionStats()
                 .WithJitStats()
                 .WithThreadPoolSchedulingStats()
@@ -34,19 +31,27 @@ namespace Prometheus.DotNetRuntime
         /// <summary>
         /// Allows you to customize the types of metrics collected. 
         /// </summary>
+        /// <param name="metrics"></param>
         /// <returns></returns>
         /// <remarks>
         /// Include specific .NET runtime metrics by calling the WithXXX() methods and then call <see cref="Builder.StartCollecting()"/>
         /// </remarks>
-        public static Builder Customize()
+        public static Builder Customize(IMetrics metrics)
         {
-            return new Builder();
+            return new Builder(metrics);
         }
 
         public class Builder
         {
+            private readonly IMetrics _metrics;
             private Action<Exception> _errorHandler;
             private bool _debugMetrics;
+
+            public Builder(IMetrics metrics)
+            {
+                _metrics = metrics;
+            }
+
             internal HashSet<IEventSourceStatsCollector> StatsCollectors { get; } = new HashSet<IEventSourceStatsCollector>(new TypeEquality<IEventSourceStatsCollector>());
 
             /// <summary>
@@ -56,29 +61,10 @@ namespace Prometheus.DotNetRuntime
             /// <returns></returns>
             public IDisposable StartCollecting()
             {
-#if PROMV2
-                return StartCollecting(TCollectorRegistry.Instance);
-#elif PROMV3
-                return StartCollecting(Metrics.DefaultRegistry);
-#endif
-            }
-
-            /// <summary>
-            /// Finishes configuration and starts collecting .NET runtime metrics. Returns a <see cref="IDisposable"/> that
-            /// can be disposed of to stop metric collection. 
-            /// </summary>
-            /// <param name="registry">Registry where metrics will be collected</param>
-            /// <returns></returns>
-            public IDisposable StartCollecting(TCollectorRegistry registry)
-            {
-                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.ToImmutableHashSet(), _errorHandler, _debugMetrics, registry);
-#if PROMV2
-                registry.RegisterOnDemandCollectors(runtimeStatsCollector);
-#elif PROMV3
-                runtimeStatsCollector.RegisterMetrics(registry);
-                registry.AddBeforeCollectCallback(runtimeStatsCollector.UpdateMetrics);
-#endif
-
+                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.ToImmutableHashSet(), _errorHandler, _debugMetrics, _metrics);
+                runtimeStatsCollector.RegisterMetrics(_metrics);
+           // Seif: what to do with this?? doesnt look like we have a similar hook in appmetrics
+           // metrics.AddBeforeCollectCallback(runtimeStatsCollector.UpdateMetrics);
                 return runtimeStatsCollector;
             }
 
@@ -95,7 +81,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithThreadPoolSchedulingStats(double[] histogramBuckets = null, SampleEvery sampleRate = SampleEvery.TenEvents)
             {
-                StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets, sampleRate));
+                StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets, sampleRate, _metrics));
                 return this;
             }
 
@@ -105,7 +91,7 @@ namespace Prometheus.DotNetRuntime
             /// </summary>
             public Builder WithThreadPoolStats()
             {
-                StatsCollectors.Add(new ThreadPoolStatsCollector());
+                StatsCollectors.Add(new ThreadPoolStatsCollector(_metrics));
                 return this;
             }
 
@@ -118,7 +104,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithContentionStats(SampleEvery sampleRate = SampleEvery.TwoEvents)
             {
-                StatsCollectors.Add(new ContentionStatsCollector(sampleRate));
+                StatsCollectors.Add(new ContentionStatsCollector(sampleRate, _metrics));
                 return this;
             }
 
@@ -134,7 +120,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithJitStats(SampleEvery sampleRate = SampleEvery.TenEvents)
             {
-                StatsCollectors.Add(new JitStatsCollector(sampleRate));
+                StatsCollectors.Add(new JitStatsCollector(sampleRate, _metrics));
                 return this;
             }
 
@@ -145,7 +131,7 @@ namespace Prometheus.DotNetRuntime
             /// <param name="histogramBuckets">Buckets for the GC collection and pause histograms</param>
             public Builder WithGcStats(double[] histogramBuckets = null)
             {
-                StatsCollectors.Add(new GcStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets));
+                StatsCollectors.Add(new GcStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets, _metrics));
                 return this;
             }
 

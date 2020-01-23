@@ -1,9 +1,6 @@
 using System;
 using System.Diagnostics.Tracing;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
-using Prometheus.DotNetRuntime.EventSources;
+using App.Metrics;
 
 namespace Prometheus.DotNetRuntime
 {
@@ -39,12 +36,6 @@ namespace Prometheus.DotNetRuntime
         /// Implementors should listen to events and perform some kind of aggregation, emitting this to prometheus.
         /// </remarks>
         void ProcessEvent(EventWrittenEventArgs e);
-        
-        /// <summary>
-        /// Called when the instance is associated with a collector registry, so that the collectors managed
-        /// by this instance can be registered.
-        /// </summary>
-        void RegisterMetrics(MetricFactory metrics);
 
         /// <summary>
         /// Called before each collection. Any values in collectors managed by this instance should now be brought up to date.

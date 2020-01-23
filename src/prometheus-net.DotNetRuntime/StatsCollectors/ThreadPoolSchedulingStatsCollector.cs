@@ -1,9 +1,7 @@
 using System;
 using System.Diagnostics.Tracing;
 using System.Linq;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics;
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -17,13 +15,15 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         private const int EventIdThreadPoolEnqueueWork = 30, EventIdThreadPoolDequeueWork = 31;
         private readonly double[] _histogramBuckets;
         private readonly SamplingRate _samplingRate;
+        private readonly IMetrics _metrics;
 
         private readonly EventPairTimer<long> _eventPairTimer;
 
-        public ThreadPoolSchedulingStatsCollector(double[] histogramBuckets, SamplingRate samplingRate)
+        public ThreadPoolSchedulingStatsCollector(double[] histogramBuckets, SamplingRate samplingRate, IMetrics metrics)
         {
             _histogramBuckets = histogramBuckets;
             _samplingRate = samplingRate;
+            _metrics = metrics;
             _eventPairTimer  = new EventPairTimer<long>(
                 EventIdThreadPoolEnqueueWork, 
                 EventIdThreadPoolDequeueWork, 
@@ -33,29 +33,13 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             );
         }
 
-        internal ThreadPoolSchedulingStatsCollector(): this(Constants.DefaultHistogramBuckets, SampleEvery.OneEvent)
+        internal ThreadPoolSchedulingStatsCollector(IMetrics metrics): this(Constants.DefaultHistogramBuckets, SampleEvery.OneEvent, metrics)
         {
         }
 
         public EventKeywords Keywords => (EventKeywords) (FrameworkEventSource.Keywords.ThreadPool);
         public EventLevel Level => EventLevel.Verbose;
         public Guid EventSourceGuid => FrameworkEventSource.Id;
-        
-        internal Counter ScheduledCount { get; private set; }
-        internal Histogram ScheduleDelay { get; private set; }
-
-        public void RegisterMetrics(MetricFactory metrics)
-        {
-            ScheduledCount = metrics.CreateCounter("dotnet_threadpool_scheduled_total", "The total number of items the thread pool has been instructed to execute");
-            ScheduleDelay = metrics.CreateHistogram(
-                "dotnet_threadpool_scheduling_delay_seconds",
-                "A breakdown of the latency experienced between an item being scheduled for execution on the thread pool and it starting execution.",
-                new HistogramConfiguration()
-                {
-                    Buckets = _histogramBuckets
-                }
-            );
-        }
 
         public void UpdateMetrics()
         {
@@ -66,11 +50,11 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             switch (_eventPairTimer.TryGetDuration(e, out var duration))
             {
                 case DurationResult.Start:
-                    ScheduledCount.Inc();
+                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.ScheduledCount);
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    ScheduleDelay.Observe(duration.TotalSeconds, _samplingRate.SampleEvery);
+                    _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.ScheduleDelay, (duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong());
                     return;
                 
                 default:

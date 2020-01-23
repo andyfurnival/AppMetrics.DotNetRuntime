@@ -4,6 +4,8 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using App.Metrics;
+using App.Metrics.Counter;
 using Prometheus.DotNetRuntime.StatsCollectors;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -11,26 +13,39 @@ namespace Prometheus.DotNetRuntime
 {
     internal sealed class DotNetEventListener : EventListener
     {
-        private static Counter _eventTypeCounts;
-        private static Counter _cpuConsumed;
+        private static CounterOptions _cpuConsumed;
+        private static CounterOptions _eventTypeCounts;
 
         private readonly IEventSourceStatsCollector _collector;
         private readonly Action<Exception> _errorHandler;
         private readonly bool _enableDebugging;
-        private readonly string _nameSnakeCase;
+        private readonly IMetrics _metrics;
 
-        internal DotNetEventListener(IEventSourceStatsCollector collector, Action<Exception> errorHandler, bool enableDebugging) : base()
+        internal DotNetEventListener(IEventSourceStatsCollector collector, Action<Exception> errorHandler, bool enableDebugging, IMetrics metrics) : base()
         {
             _collector = collector;
             _errorHandler = errorHandler;
             _enableDebugging = enableDebugging;
-            
+            _metrics = metrics;
+
             if (_enableDebugging)
             {
-                _eventTypeCounts ??= Metrics.CreateCounter($"dotnet_debug_events_total", "The total number of .NET diagnostic events processed", "collector_name", "event_source_name", "event_name");
-                _cpuConsumed ??= Metrics.CreateCounter("dotnet_debug_cpu_seconds_total", "The total CPU time consumed by processing .NET diagnostic events (does not include the CPU cost to generate the events)", "collector_name", "event_source_name", "event_name");
-                _nameSnakeCase = collector.GetType().Name.ToSnakeCase();
+                _cpuConsumed = new CounterOptions()
+                {
+                    Context = "DotNetRuntime",
+                    MeasurementUnit = Unit.None,
+                    ReportItemPercentages = false,
+                    Name = "dotnet_debug_cpu_milliseconds_total",
+                    Tags = new MetricTags("collector", collector.GetType().Name.ToSnakeCase())
+                };
             }
+
+            _eventTypeCounts = new CounterOptions()
+            {
+                Context = "DotNetRuntime",
+                MeasurementUnit = Unit.Items,
+                ReportItemPercentages = false
+            };
             
             EnableEventSources(collector);
         }
@@ -57,7 +72,7 @@ namespace Prometheus.DotNetRuntime
             {
                 if (_enableDebugging)
                 {
-                    _eventTypeCounts.Labels(_nameSnakeCase, eventData.EventSource.Name, eventData.EventName).Inc();
+                    _metrics.Measure.Counter.Increment(_eventTypeCounts, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}));
                     sp.Restart();
                 }
                 
@@ -66,7 +81,8 @@ namespace Prometheus.DotNetRuntime
                 if (_enableDebugging)
                 {
                     sp.Stop();
-                    _cpuConsumed.Labels(_nameSnakeCase, eventData.EventSource.Name, eventData.EventName).Inc(sp.Elapsed.TotalSeconds);
+                    
+                    _metrics.Measure.Counter.Increment(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}), sp.Elapsed.TotalMilliseconds.RoundToLong());
                 }
             }
             catch (Exception e)

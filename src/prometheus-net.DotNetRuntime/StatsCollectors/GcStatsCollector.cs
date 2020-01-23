@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics;
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -47,77 +45,33 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         private readonly Ratio _gcCpuRatio = Ratio.ProcessTotalCpu();
         private readonly Ratio _gcPauseRatio = Ratio.ProcessTime();
         private readonly double[] _histogramBuckets;
+        private readonly IMetrics _metrics;
 
-        public GcStatsCollector(double[] histogramBuckets)
+        public GcStatsCollector(double[] histogramBuckets, IMetrics metrics)
         {
             _histogramBuckets = histogramBuckets;
+            _metrics = metrics;
         }
 
-        public GcStatsCollector() : this(Constants.DefaultHistogramBuckets)
+        public GcStatsCollector(IMetrics metrics) : this(Constants.DefaultHistogramBuckets, metrics)
         {
         }
 
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
         public EventKeywords Keywords => (EventKeywords) DotNetRuntimeEventSource.Keywords.GC;
         public EventLevel Level => EventLevel.Verbose;
-
-        internal Histogram GcCollectionSeconds { get; private set; }
-        internal Histogram GcPauseSeconds { get; private set; }
-        internal Counter GcCollectionReasons { get; private set; }
-        internal Gauge GcCpuRatio { get; private set; }
-        internal Gauge GcPauseRatio { get; private set; }
-        internal Counter AllocatedBytes { get; private set; }
-        internal Gauge GcHeapSizeBytes { get; private set; }
-        internal Gauge GcNumPinnedObjects { get; private set; }
-        internal Gauge GcFinalizationQueueLength { get; private set; }
-
-        public void RegisterMetrics(MetricFactory metrics)
-        {
-            GcCollectionSeconds = metrics.CreateHistogram(
-                "dotnet_gc_collection_seconds",
-                "The amount of time spent running garbage collections",
-                    new HistogramConfiguration()
-                    {
-                        Buckets = _histogramBuckets,
-                        LabelNames = new []{ LabelGeneration, LabelType }
-                    }
-                );
-
-            GcPauseSeconds = metrics.CreateHistogram(
-                "dotnet_gc_pause_seconds",
-                "The amount of time execution was paused for garbage collection",
-                new HistogramConfiguration()
-                    {
-                        Buckets = _histogramBuckets
-                    }
-                );
-
-            GcCollectionReasons = metrics.CreateCounter(
-                "dotnet_gc_collection_reasons_total",
-                "A tally of all the reasons that lead to garbage collections being run",
-                LabelReason);
-
-            GcCpuRatio = metrics.CreateGauge("dotnet_gc_cpu_ratio", "The percentage of process CPU time spent running garbage collections");
-            GcPauseRatio = metrics.CreateGauge("dotnet_gc_pause_ratio", "The percentage of time the process spent paused for garbage collection");
-
-            AllocatedBytes = metrics.CreateCounter(
-                "dotnet_gc_allocated_bytes_total",
-                "The total number of bytes allocated on the small and large object heaps (updated every 100KB of allocations)",
-                LabelHeap);
-
-            GcHeapSizeBytes = metrics.CreateGauge(
-                "dotnet_gc_heap_size_bytes",
-                "The current size of all heaps (only updated after a garbage collection)",
-                LabelGeneration);
-
-            GcNumPinnedObjects = metrics.CreateGauge("dotnet_gc_pinned_objects", "The number of pinned objects");
-            GcFinalizationQueueLength = metrics.CreateGauge("dotnet_gc_finalization_queue_length", "The number of objects waiting to be finalized");
-        }
-
+        
         public void UpdateMetrics()
         {
-            GcCpuRatio.Set(_gcCpuRatio.CalculateConsumedRatio(GcCollectionSeconds));
-            GcPauseRatio.Set(_gcPauseRatio.CalculateConsumedRatio(GcPauseSeconds));
+            var gcCollectionMilliSecondsHistogram =
+                _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds);
+            
+            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram));
+            
+            var gcPauseMilliSecondsHistogram =
+                _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds);
+            
+            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram));
         }
 
         public void ProcessEvent(EventWrittenEventArgs e)
@@ -126,18 +80,18 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             {
                 const uint lohHeapFlag = 0x1;
                 var heapLabelValue = ((uint) e.Payload[1] & lohHeapFlag) == lohHeapFlag ? "loh" : "soh";
-                AllocatedBytes.Labels(heapLabelValue).Inc((uint) e.Payload[0]);
+                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.AllocatedBytes, new MetricTags("heap", heapLabelValue), (uint)e.Payload[0]);
                 return;
             }
 
             if (e.EventId == EventIdHeapStats)
             {
-                GcHeapSizeBytes.Labels("0").Set((ulong) e.Payload[0]);
-                GcHeapSizeBytes.Labels("1").Set((ulong) e.Payload[2]);
-                GcHeapSizeBytes.Labels("2").Set((ulong) e.Payload[4]);
-                GcHeapSizeBytes.Labels("loh").Set((ulong) e.Payload[6]);
-                GcFinalizationQueueLength.Set((ulong) e.Payload[9]);
-                GcNumPinnedObjects.Set((uint) e.Payload[10]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcHeapSizeBytes, new MetricTags("generation", "0"), (UInt64)e.Payload[0]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcHeapSizeBytes, new MetricTags("generation", "1"), (UInt64)e.Payload[2]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcHeapSizeBytes, new MetricTags("generation", "2"), (UInt64)e.Payload[4]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcHeapSizeBytes, new MetricTags("generation", "loh"), (UInt64)e.Payload[6]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcFinalizationQueueLength, (UInt64)e.Payload[9]);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcNumPinnedObjects, (UInt32)e.Payload[10]);
                 return;
             }
 
@@ -152,18 +106,18 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
             if (_gcPauseEventTimer.TryGetDuration(e, out var pauseDuration) == DurationResult.FinalWithDuration)
             {
-                GcPauseSeconds.Observe(pauseDuration.TotalSeconds);
+                _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds, pauseDuration.TotalMilliseconds.RoundToLong());
                 return;
             }
 
             if (e.EventId == EventIdGcStart)
             {
-                GcCollectionReasons.Labels(_gcReasonToLabels[(DotNetRuntimeEventSource.GCReason) e.Payload[2]]).Inc();
+                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.GcCollectionReasons, new MetricTags("reason", _gcReasonToLabels[(DotNetRuntimeEventSource.GCReason) e.Payload[2]]));
             }
 
             if (_gcEventTimer.TryGetDuration(e, out var gcDuration, out var gcData) == DurationResult.FinalWithDuration)
             {
-                GcCollectionSeconds.Labels(gcData.GetGenerationToString(), gcData.GetTypeToString()).Observe(gcDuration.TotalSeconds);
+                _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds, gcDuration.TotalMilliseconds.RoundToLong());
             }
         }
 

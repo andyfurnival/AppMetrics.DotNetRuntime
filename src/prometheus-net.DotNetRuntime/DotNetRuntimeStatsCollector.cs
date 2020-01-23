@@ -5,63 +5,47 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-#if PROMV2
-using Prometheus.Advanced;
-using TCollectorRegistry = Prometheus.Advanced.ICollectorRegistry;
-#elif PROMV3
-using TCollectorRegistry = Prometheus.CollectorRegistry;
-#endif
+using App.Metrics;
+using App.Metrics.Gauge;
+using App.Metrics.Registry;
 
 namespace Prometheus.DotNetRuntime
 {
     internal sealed class DotNetRuntimeStatsCollector : 
         IDisposable
-#if PROMV2
-        , IOnDemandCollector
-#endif
+
     {
-        private static readonly Dictionary<TCollectorRegistry, DotNetRuntimeStatsCollector> Instances = new Dictionary<TCollectorRegistry, DotNetRuntimeStatsCollector>();
+        private static readonly Dictionary<IMetrics, DotNetRuntimeStatsCollector> Instances = new Dictionary<IMetrics, DotNetRuntimeStatsCollector>();
         
         private DotNetEventListener[] _eventListeners;
         private readonly ImmutableHashSet<IEventSourceStatsCollector> _statsCollectors;
         private readonly bool _enabledDebugging;
         private readonly Action<Exception> _errorHandler;
-        private readonly TCollectorRegistry _registry;
+        private readonly IMetrics _metrics;
         private readonly object _lockInstance = new object();
 
-        internal DotNetRuntimeStatsCollector(ImmutableHashSet<IEventSourceStatsCollector> statsCollectors, Action<Exception> errorHandler, bool enabledDebugging, TCollectorRegistry registry)
+        internal DotNetRuntimeStatsCollector(ImmutableHashSet<IEventSourceStatsCollector> statsCollectors, Action<Exception> errorHandler, bool enabledDebugging, IMetrics metrics)
         {
             _statsCollectors = statsCollectors;
             _enabledDebugging = enabledDebugging;
             _errorHandler = errorHandler ?? (e => { });
-            _registry = registry;
+            _metrics = metrics;
             lock (_lockInstance)
             {
-                if (Instances.ContainsKey(registry))
+                if (Instances.ContainsKey(metrics))
                 {
                     throw new InvalidOperationException(".NET runtime metrics are already being collected. Dispose() of your previous collector before calling this method again.");
                 }
 
-                Instances.Add(registry, this);
+                Instances.Add(metrics, this);
             }
         }
 
-        public void RegisterMetrics(TCollectorRegistry registry)
-        {   
-#if PROMV2
-            var metrics = new MetricFactory(registry);
-#elif PROMV3
-            var metrics = Metrics.WithCustomRegistry(registry);
-#endif
-            
-            foreach (var sc in _statsCollectors)
-            {
-                sc.RegisterMetrics(metrics);
-            }
-            
+        public void RegisterMetrics(IMetrics metrics)
+        {
             // Metrics have been registered, start the event listeners
             _eventListeners = _statsCollectors
-                .Select(sc => new DotNetEventListener(sc, _errorHandler, _enabledDebugging))
+                .Select(sc => new DotNetEventListener(sc, _errorHandler, _enabledDebugging, metrics))
                 .ToArray();
 
             SetupConstantMetrics(metrics);
@@ -96,35 +80,34 @@ namespace Prometheus.DotNetRuntime
             {
                 lock (_lockInstance)
                 {
-                    Instances.Remove(_registry);
+                    Instances.Remove(_metrics);
                 }
             }
         }
         
-        private void SetupConstantMetrics(MetricFactory metrics)
+        private void SetupConstantMetrics(IMetrics metrics)
         {
             // These metrics are fairly generic in name, catch any exceptions on trying to create them 
             // in case prometheus-net or another plugin has registered them.
             try
             {
-                var buildInfo = metrics.CreateGauge(
-                    "dotnet_build_info",
-                    "Build information about prometheus-net.DotNetRuntime and the environment",
-                    "version",
-                    "target_framework",
-                    "runtime_version",
-                    "os_version",
-                    "process_architecture"
-                );
-
-                buildInfo.Labels(
-                        this.GetType().Assembly.GetName().Version.ToString(),
-                        Assembly.GetEntryAssembly().GetCustomAttribute<TargetFrameworkAttribute>().FrameworkName,
-                        RuntimeInformation.FrameworkDescription,
-                        RuntimeInformation.OSDescription,
-                        RuntimeInformation.ProcessArchitecture.ToString()
-                    )
-                    .Set(1);
+                var buildInfo = new GaugeOptions()
+                {
+                    Context = "DotNetRuntime",
+                    Name = "dotnet_build_info",
+                    Tags = new MetricTags(
+                        keys: new[] {"version", "target_framework", "runtime_version", "os_version", "process_architecture"},
+                        values:new[]
+                        {
+                            this.GetType().Assembly.GetName().Version.ToString(),
+                            Assembly.GetEntryAssembly().GetCustomAttribute<TargetFrameworkAttribute>().FrameworkName,
+                            RuntimeInformation.FrameworkDescription,
+                            RuntimeInformation.OSDescription,
+                            RuntimeInformation.ProcessArchitecture.ToString()
+                        })
+                };
+                
+                metrics.Measure.Gauge.SetValue(buildInfo, 1);
             }
             catch (Exception e)
             {
@@ -133,8 +116,13 @@ namespace Prometheus.DotNetRuntime
 
             try
             {
-                var processorCount = metrics.CreateGauge("process_cpu_count", "The number of processor cores available to this process.");
-                processorCount.Set(Environment.ProcessorCount);
+                var cpuCount = new GaugeOptions()
+                {
+                    Context = "DotNetRuntime",
+                    Name = "process_cpu_count"
+                };
+                
+                metrics.Measure.Gauge.SetValue(cpuCount, Environment.ProcessorCount);
             }
             catch (Exception e)
             {

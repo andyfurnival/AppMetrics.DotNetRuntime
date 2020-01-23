@@ -1,8 +1,6 @@
 using System;
 using System.Diagnostics.Tracing;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics;
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -19,12 +17,14 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     internal sealed class ContentionStatsCollector : IEventSourceStatsCollector
     {
         private readonly SamplingRate _samplingRate;
+        private readonly IMetrics _metrics;
         private const int EventIdContentionStart = 81, EventIdContentionStop = 91;
         private readonly EventPairTimer<long> _eventPairTimer;
 
-        public ContentionStatsCollector(SamplingRate samplingRate)
+        public ContentionStatsCollector(SamplingRate samplingRate, IMetrics metrics)
         {
             _samplingRate = samplingRate;
+            _metrics = metrics;
             _eventPairTimer = new EventPairTimer<long>(
                 EventIdContentionStart,
                 EventIdContentionStop,
@@ -37,15 +37,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventLevel Level => EventLevel.Informational;
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
 
-        internal Counter ContentionSecondsTotal { get; private set; }
-        internal Counter ContentionTotal { get; private set; }
-
-        public void RegisterMetrics(MetricFactory metrics)
-        {
-            ContentionSecondsTotal = metrics.CreateCounter("dotnet_contention_seconds_total", "The total amount of time spent contending locks");
-            ContentionTotal = metrics.CreateCounter("dotnet_contention_total", "The number of locks contended");
-        }
-
         public void UpdateMetrics()
         {
         }
@@ -55,11 +46,11 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             switch (_eventPairTimer.TryGetDuration(e, out var duration))
             {
                 case DurationResult.Start:
-                    ContentionTotal.Inc();
+                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.ContentionTotal);
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    ContentionSecondsTotal.Inc(duration.TotalSeconds * _samplingRate.SampleEvery);
+                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.ContentionMilliSecondsTotal, (long)(duration.TotalMilliseconds * _samplingRate.SampleEvery));
                     return;
 
                 default:

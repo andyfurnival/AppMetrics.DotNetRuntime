@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics;
+
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -15,6 +14,8 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     /// </summary>
     public class ThreadPoolStatsCollector : IEventSourceStatsCollector
     {
+        private readonly IMetrics _metrics;
+
         private const int
             EventIdThreadPoolSample = 54,
             EventIdThreadPoolAdjustment = 55,
@@ -25,27 +26,14 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
         private Dictionary<DotNetRuntimeEventSource.ThreadAdjustmentReason, string> _adjustmentReasonToLabel = LabelGenerator.MapEnumToLabelValues<DotNetRuntimeEventSource.ThreadAdjustmentReason>();
 
-        internal Gauge NumThreads { get; private set; }
-        internal Gauge NumIocThreads { get; private set; }
-        
-        // TODO resolve issue where throughput cannot be calculated (stats event is giving garbage values)
-        // internal Counter Throughput { get; private set; }
-        internal Counter AdjustmentsTotal { get; private set; }
+        public ThreadPoolStatsCollector(IMetrics metrics)
+        {
+            _metrics = metrics;
+        }
 
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
         public EventKeywords Keywords => (EventKeywords) DotNetRuntimeEventSource.Keywords.Threading;
         public EventLevel Level => EventLevel.Informational;
-
-        public void RegisterMetrics(MetricFactory metrics)
-        {
-            NumThreads = metrics.CreateGauge("dotnet_threadpool_num_threads", "The number of active threads in the thread pool");
-            NumIocThreads = metrics.CreateGauge("dotnet_threadpool_io_num_threads", "The number of active threads in the IO thread pool");
-            // Throughput = metrics.CreateCounter("dotnet_threadpool_throughput_total", "The total number of work items that have finished execution in the thread pool");
-            AdjustmentsTotal = metrics.CreateCounter(
-                "dotnet_threadpool_adjustments_total",
-                "The total number of changes made to the size of the thread pool, labeled by the reason for change",
-                "adjustment_reason");
-        }
 
         public void UpdateMetrics()
         {
@@ -60,15 +48,15 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                     return;
 
                 case EventIdThreadPoolAdjustment:
-                    NumThreads.Set((uint) e.Payload[1]);
-                    AdjustmentsTotal.Labels(_adjustmentReasonToLabel[(DotNetRuntimeEventSource.ThreadAdjustmentReason) e.Payload[2]]).Inc();
+                    _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.NumThreads, (uint) e.Payload[1]);
+                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.AdjustmentsTotal, new MetricTags("reason", _adjustmentReasonToLabel[(DotNetRuntimeEventSource.ThreadAdjustmentReason) e.Payload[2]]));
                     return;
 
                 case EventIdIoThreadCreate:
                 case EventIdIoThreadRetire:
                 case EventIdIoThreadUnretire:
                 case EventIdIoThreadTerminate:
-                    NumIocThreads.Set((uint)e.Payload[0]);
+                    _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.NumIoThreads, (uint) e.Payload[1]);
                     return;
             }
         }

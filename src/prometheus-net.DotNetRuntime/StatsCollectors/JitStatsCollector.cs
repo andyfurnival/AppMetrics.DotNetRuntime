@@ -1,9 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics;
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -16,6 +13,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     internal sealed class JitStatsCollector : IEventSourceStatsCollector
     {
         private readonly SamplingRate _samplingRate;
+        private readonly IMetrics _metrics;
         private const int EventIdMethodJittingStarted = 145, EventIdMethodLoadVerbose = 143;
         private const string DynamicLabel = "dynamic";
         private const string LabelValueTrue = "true";
@@ -25,9 +23,10 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
         private readonly Ratio _jitCpuRatio = Ratio.ProcessTotalCpu();
 
-        public JitStatsCollector(SamplingRate samplingRate)
+        public JitStatsCollector(SamplingRate samplingRate, IMetrics metrics)
         {
             _samplingRate = samplingRate;
+            _metrics = metrics;
             _eventPairTimer = new EventPairTimer<ulong>(
                 EventIdMethodJittingStarted,
                 EventIdMethodLoadVerbose,
@@ -40,20 +39,10 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventLevel Level => EventLevel.Verbose;
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
 
-        internal Counter MethodsJittedTotal { get; private set; }
-        internal Counter MethodsJittedSecondsTotal { get; private set; }
-        internal Gauge CpuRatio { get; private set; }
-
-        public void RegisterMetrics(MetricFactory metrics)
-        {
-            MethodsJittedTotal = metrics.CreateCounter("dotnet_jit_method_total", "Total number of methods compiled by the JIT compiler", DynamicLabel);
-            MethodsJittedSecondsTotal = metrics.CreateCounter("dotnet_jit_method_seconds_total", "Total number of seconds spent in the JIT compiler", DynamicLabel);
-            CpuRatio = metrics.CreateGauge("dotnet_jit_cpu_ratio", "The amount of total CPU time consumed spent JIT'ing");
-        }
-
         public void UpdateMetrics()
         {
-            CpuRatio.Set(_jitCpuRatio.CalculateConsumedRatio(MethodsJittedSecondsTotal));
+            var methodsJittedMsTotalCounter = _metrics.Provider.Counter.Instance(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal);
+            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio(methodsJittedMsTotalCounter));
         }
 
         public void ProcessEvent(EventWrittenEventArgs e)
@@ -65,8 +54,8 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 var methodFlags = (uint)e.Payload[5];
                 var dynamicLabelValue = (methodFlags & 0x1) == 0x1 ? LabelValueTrue : LabelValueFalse;
                 
-                MethodsJittedTotal.Labels(dynamicLabelValue).Inc(_samplingRate.SampleEvery);
-                MethodsJittedSecondsTotal.Labels(dynamicLabelValue).Inc(duration.TotalSeconds * _samplingRate.SampleEvery);
+                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue), _samplingRate.SampleEvery);
+                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue), (duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong());
             }
         }
     }

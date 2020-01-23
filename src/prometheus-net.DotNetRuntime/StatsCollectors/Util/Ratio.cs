@@ -1,9 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
-#if PROMV2
-using Prometheus.Advanced;
-#endif
+using App.Metrics.Counter;
+using App.Metrics.Histogram;
 
 namespace Prometheus.DotNetRuntime.StatsCollectors.Util
 {
@@ -14,7 +13,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
     {
         private readonly Func<TimeSpan> _getElapsedTime;
         private TimeSpan _lastProcessTime;
-        private double _lastEventTotalSeconds;
+        private double _lastEventTotalMillieSeconds;
 
         internal Ratio(Func<TimeSpan> getElapsedTime)
         {
@@ -46,13 +45,13 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
             return new Ratio(() => DateTime.UtcNow - startTime);
         }
         
-        public double CalculateConsumedRatio(double eventsCpuTimeTotalSeconds)
+        public double CalculateConsumedRatio(double eventsCpuTimeTotalMilliSeconds)
         {
             var currentProcessTime = _getElapsedTime();
             var consumedProcessTime = currentProcessTime - _lastProcessTime;
-            var eventsConsumedTimeSeconds = eventsCpuTimeTotalSeconds - _lastEventTotalSeconds;
+            var eventsConsumedTimeMilliSeconds = eventsCpuTimeTotalMilliSeconds - _lastEventTotalMillieSeconds;
 
-            if (eventsConsumedTimeSeconds < 0.0)
+            if (eventsConsumedTimeMilliSeconds < 0.0)
             {
                 // In this case, the difference between our last observed events CPU time and the current events CPU time is negative.
                 // This means that we are being passed a non-incrementing value (which the caller should not be doing).
@@ -62,7 +61,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
             }
             
             _lastProcessTime = currentProcessTime;
-            _lastEventTotalSeconds = eventsCpuTimeTotalSeconds;
+            _lastEventTotalMillieSeconds = eventsCpuTimeTotalMilliSeconds;
             
             if (consumedProcessTime == TimeSpan.Zero)
             {
@@ -74,18 +73,19 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
                 // We want to avoid a situation where we could return more than 100%. This could occur
                 // if a delay is introduced between events being published and processed.
                 // TODO need to potentially discard old events?
-                return Math.Min(1.0, eventsConsumedTimeSeconds / consumedProcessTime.TotalSeconds);
+                return Math.Min(1.0, eventsConsumedTimeMilliSeconds / consumedProcessTime.TotalMilliseconds);
             }
         }
 
-        public double CalculateConsumedRatio(Counter eventCpuConsumedTotalSeconds)
+        public double CalculateConsumedRatio(ICounter eventCpuConsumedTotalMilliSeconds)
         {
-            return CalculateConsumedRatio(eventCpuConsumedTotalSeconds.CollectAllValues().Sum(x => x));            
+            return CalculateConsumedRatio(eventCpuConsumedTotalMilliSeconds
+                .GetValueOrDefault().Count);            
         }
         
-        public double CalculateConsumedRatio(Histogram eventCpuConsumedSeconds)
+        public double CalculateConsumedRatio(IHistogram eventCpuConsumedSeconds)
         {
-            return CalculateConsumedRatio(eventCpuConsumedSeconds.CollectAllSumValues().Sum(x => x));            
+            return CalculateConsumedRatio(eventCpuConsumedSeconds.GetValueOrDefault().Sum);            
         }
     }
 }
