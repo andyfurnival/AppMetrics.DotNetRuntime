@@ -19,21 +19,18 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
         private readonly int _endEventId;
         private readonly Func<EventWrittenEventArgs, TId> _extractEventIdFn;
         private readonly Func<EventWrittenEventArgs, TEventData> _extractData;
-        private readonly SamplingRate _samplingRate;
-
+        
         public EventPairTimer(
             int startEventId, 
             int endEventId, 
             Func<EventWrittenEventArgs, TId> extractEventIdFn, 
             Func<EventWrittenEventArgs, TEventData> extractData,
-            SamplingRate samplingRate,
             Cache<TId, TEventData> cache = null)
         {
             _startEventId = startEventId;
             _endEventId = endEventId;
             _extractEventIdFn = extractEventIdFn;
             _extractData = extractData;
-            _samplingRate = samplingRate;
             _eventStartedAtCache = cache ?? new Cache<TId, TEventData>(TimeSpan.FromMinutes(1));
         }
         
@@ -52,11 +49,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
             
             if (e.EventId == _startEventId)
             {
-                if (_samplingRate.ShouldSampleEvent())
-                {
-                    _eventStartedAtCache.Set(_extractEventIdFn(e), _extractData(e), e.TimeStamp);
-                }
-
+                _eventStartedAtCache.Set(_extractEventIdFn(e), _extractData(e), e.TimeStamp);
                 return DurationResult.Start;
             }
             
@@ -89,8 +82,8 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
     public sealed class EventPairTimer<TId> : EventPairTimer<TId, int>
         where TId : struct
     {
-        public EventPairTimer(int startEventId, int endEventId, Func<EventWrittenEventArgs, TId> extractEventIdFn, SamplingRate samplingRate, Cache<TId, int> cache = null) 
-            : base(startEventId, endEventId, extractEventIdFn, e => 0, samplingRate, cache)
+        public EventPairTimer(int startEventId, int endEventId, Func<EventWrittenEventArgs, TId> extractEventIdFn, Cache<TId, int> cache = null) 
+            : base(startEventId, endEventId, extractEventIdFn, e => 0, cache)
         {
         }
         

@@ -14,7 +14,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     /// </summary>
     internal sealed class JitStatsCollector : IEventSourceStatsCollector
     {
-        private readonly SamplingRate _samplingRate;
         private readonly IMetrics _metrics;
         private const int EventIdMethodJittingStarted = 145, EventIdMethodLoadVerbose = 143;
         private const string DynamicLabel = "dynamic";
@@ -26,15 +25,13 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
         private readonly Ratio _jitCpuRatio = Ratio.ProcessTotalCpu();
 
-        public JitStatsCollector(SamplingRate samplingRate, IMetrics metrics)
+        public JitStatsCollector(IMetrics metrics)
         {
-            _samplingRate = samplingRate;
             _metrics = metrics;
             _eventPairTimer = new EventPairTimer<ulong>(
                 EventIdMethodJittingStarted,
                 EventIdMethodLoadVerbose,
-                x => (ulong)x.Payload[0],
-                samplingRate
+                x => (ulong)x.Payload[0]
             );
         }
        
@@ -51,8 +48,8 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 var methodFlags = (uint)e.Payload[5];
                 var dynamicLabelValue = (methodFlags & 0x1) == 0x1 ? LabelValueTrue : LabelValueFalse;
                 
-                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue), _samplingRate.SampleEvery);
-                _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue)).Record((duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong(), TimeUnit.Milliseconds);
+                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue));
+                _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue)).Record(duration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
                 
                 var methodsJittedMsTotalCounter = _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal);
                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio((methodsJittedMsTotalCounter.CurrentTime()/NanosPerMilliSecond)));

@@ -81,7 +81,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithThreadPoolSchedulingStats(double[] histogramBuckets = null, SampleEvery sampleRate = SampleEvery.TenEvents)
             {
-                StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets, sampleRate, _metrics));
+                StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(_metrics));
                 return this;
             }
 
@@ -104,7 +104,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithContentionStats(SampleEvery sampleRate = SampleEvery.TwoEvents)
             {
-                StatsCollectors.Add(new ContentionStatsCollector(sampleRate, _metrics));
+                StatsCollectors.Add(new ContentionStatsCollector(_metrics));
                 return this;
             }
 
@@ -120,7 +120,7 @@ namespace Prometheus.DotNetRuntime
             /// </param>
             public Builder WithJitStats(SampleEvery sampleRate = SampleEvery.TenEvents)
             {
-                StatsCollectors.Add(new JitStatsCollector(sampleRate, _metrics));
+                StatsCollectors.Add(new JitStatsCollector(_metrics));
                 return this;
             }
 

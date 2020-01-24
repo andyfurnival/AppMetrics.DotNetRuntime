@@ -13,28 +13,19 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     internal sealed class ThreadPoolSchedulingStatsCollector : IEventSourceStatsCollector
     {
         private const int EventIdThreadPoolEnqueueWork = 30, EventIdThreadPoolDequeueWork = 31;
-        private readonly double[] _histogramBuckets;
-        private readonly SamplingRate _samplingRate;
         private readonly IMetrics _metrics;
 
         private readonly EventPairTimer<long> _eventPairTimer;
 
-        public ThreadPoolSchedulingStatsCollector(double[] histogramBuckets, SamplingRate samplingRate, IMetrics metrics)
+        public ThreadPoolSchedulingStatsCollector(IMetrics metrics)
         {
-            _histogramBuckets = histogramBuckets;
-            _samplingRate = samplingRate;
             _metrics = metrics;
             _eventPairTimer  = new EventPairTimer<long>(
                 EventIdThreadPoolEnqueueWork, 
                 EventIdThreadPoolDequeueWork, 
                 x => (long)x.Payload[0],
-                samplingRate,
                 new Cache<long, int>(TimeSpan.FromSeconds(30), initialCapacity: 512)
             );
-        }
-
-        internal ThreadPoolSchedulingStatsCollector(IMetrics metrics): this(Constants.DefaultHistogramBuckets, SampleEvery.OneEvent, metrics)
-        {
         }
 
         public EventKeywords Keywords => (EventKeywords) (FrameworkEventSource.Keywords.ThreadPool);
@@ -50,7 +41,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay).Record((duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong(), TimeUnit.Milliseconds);
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay).Record(duration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
                     return;
                 
                 default:

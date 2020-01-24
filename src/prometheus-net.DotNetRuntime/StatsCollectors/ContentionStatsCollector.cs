@@ -16,20 +16,17 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
     /// </remarks>
     internal sealed class ContentionStatsCollector : IEventSourceStatsCollector
     {
-        private readonly SamplingRate _samplingRate;
         private readonly IMetrics _metrics;
         private const int EventIdContentionStart = 81, EventIdContentionStop = 91;
         private readonly EventPairTimer<long> _eventPairTimer;
 
-        public ContentionStatsCollector(SamplingRate samplingRate, IMetrics metrics)
+        public ContentionStatsCollector(IMetrics metrics)
         {
-            _samplingRate = samplingRate;
             _metrics = metrics;
             _eventPairTimer = new EventPairTimer<long>(
                 EventIdContentionStart,
                 EventIdContentionStop,
-                x => x.OSThreadId,
-                samplingRate
+                x => x.OSThreadId
             );
         }
 
@@ -46,7 +43,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record((long)(duration.TotalMilliseconds * _samplingRate.SampleEvery), TimeUnit.Milliseconds);
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record(duration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
                     return;
 
                 default:
