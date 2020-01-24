@@ -45,7 +45,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
                 case EventIdThreadPoolAdjustment:
                     _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.NumThreads, (uint) e.Payload[1]);
-                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.AdjustmentsTotal, new MetricTags("reason", _adjustmentReasonToLabel[(DotNetRuntimeEventSource.ThreadAdjustmentReason) e.Payload[2]]));
+                    _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.AdjustmentsTotal, new MetricTags("reason", _adjustmentReasonToLabel[(DotNetRuntimeEventSource.ThreadAdjustmentReason) e.Payload[2]]));
                     return;
 
                 case EventIdIoThreadCreate:

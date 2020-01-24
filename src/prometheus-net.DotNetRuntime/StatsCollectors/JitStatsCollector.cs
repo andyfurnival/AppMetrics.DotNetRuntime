@@ -1,6 +1,8 @@
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using App.Metrics;
+using App.Metrics.Gauge;
 using Prometheus.DotNetRuntime.EventSources;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -18,6 +20,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         private const string DynamicLabel = "dynamic";
         private const string LabelValueTrue = "true";
         private const string LabelValueFalse = "false";
+        private const double NanosPerMilliSecond = 1000000.0;
 
         private readonly EventPairTimer<ulong> _eventPairTimer;
 
@@ -48,11 +51,11 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 var methodFlags = (uint)e.Payload[5];
                 var dynamicLabelValue = (methodFlags & 0x1) == 0x1 ? LabelValueTrue : LabelValueFalse;
                 
-                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue), _samplingRate.SampleEvery);
-                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue), (duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong());
+                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue), _samplingRate.SampleEvery);
+                _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue)).Record((duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong(), TimeUnit.Milliseconds);
                 
-                var methodsJittedMsTotalCounter = _metrics.Provider.Counter.Instance(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio(methodsJittedMsTotalCounter));
+                var methodsJittedMsTotalCounter = _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio((methodsJittedMsTotalCounter.CurrentTime()/NanosPerMilliSecond)));
             }
         }
     }

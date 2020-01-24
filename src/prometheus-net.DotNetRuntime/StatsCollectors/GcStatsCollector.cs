@@ -67,7 +67,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             {
                 const uint lohHeapFlag = 0x1;
                 var heapLabelValue = ((uint) e.Payload[1] & lohHeapFlag) == lohHeapFlag ? "loh" : "soh";
-                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.AllocatedBytes, new MetricTags("heap", heapLabelValue), (uint)e.Payload[0]);
+                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.AllocatedBytes, new MetricTags("heap", heapLabelValue), (uint)e.Payload[0]);
                 return;
             }
 
@@ -94,23 +94,23 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             if (_gcPauseEventTimer.TryGetDuration(e, out var pauseDuration) == DurationResult.FinalWithDuration)
             {
                 var gcPauseMilliSecondsHistogram =
-                    _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds);
-                 gcPauseMilliSecondsHistogram.Update(pauseDuration.TotalMilliseconds.RoundToLong());
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram));
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcPauseMilliSeconds);
+                 gcPauseMilliSecondsHistogram.Record(pauseDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram.CurrentTime()));
                 return;
             }
 
             if (e.EventId == EventIdGcStart)
             {
-                _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.GcCollectionReasons, new MetricTags("reason", _gcReasonToLabels[(DotNetRuntimeEventSource.GCReason) e.Payload[2]]));
+                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.GcCollectionReasons, new MetricTags("reason", _gcReasonToLabels[(DotNetRuntimeEventSource.GCReason) e.Payload[2]]));
             }
 
             if (_gcEventTimer.TryGetDuration(e, out var gcDuration, out var gcData) == DurationResult.FinalWithDuration)
             {
                 var gcCollectionMilliSecondsHistogram =
-                    _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds);
-                gcCollectionMilliSecondsHistogram.Update(gcDuration.TotalMilliseconds.RoundToLong());
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram));
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcCollectionMilliSeconds);
+                gcCollectionMilliSecondsHistogram.Record(gcDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram.CurrentTime()));
             }
         }
 

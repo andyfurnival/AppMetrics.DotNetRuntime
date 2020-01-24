@@ -46,11 +46,11 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             switch (_eventPairTimer.TryGetDuration(e, out var duration))
             {
                 case DurationResult.Start:
-                    _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.ScheduledCount);
+                    _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.ScheduledCount);
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.ScheduleDelay, (duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong());
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay).Record((duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong(), TimeUnit.Milliseconds);
                     return;
                 
                 default:

@@ -83,9 +83,9 @@ namespace Prometheus.DotNetRuntime.StatsCollectors.Util
                 .GetValueOrDefault().Count);            
         }
         
-        public double CalculateConsumedRatio(IHistogram eventCpuConsumedSeconds)
+        public double CalculateConsumedRatio(IHistogram eventCpuConsumedMilleSeconds)
         {
-            return CalculateConsumedRatio(eventCpuConsumedSeconds.GetValueOrDefault().Sum);            
+            return CalculateConsumedRatio(eventCpuConsumedMilleSeconds.GetValueOrDefault().Sum);            
         }
     }
 }
