@@ -52,7 +52,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue)).Record(duration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
                 
                 var methodsJittedMsTotalCounter = _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio((methodsJittedMsTotalCounter.CurrentTime()/NanosPerMilliSecond)));
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio(methodsJittedMsTotalCounter.CurrentTime()/NanosPerMilliSecond));
             }
         }
     }

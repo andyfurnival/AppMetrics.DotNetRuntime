@@ -26,7 +26,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             EventIdRestartEEStop = 3,
             EventIdHeapStats = 4,
             EventIdAllocTick = 10;
-
+        private const double NanosPerMilliSecond = 1000000.0;
         private readonly EventPairTimer<uint, GcData> _gcEventTimer = new EventPairTimer<uint, GcData>(
             EventIdGcStart,
             EventIdGcStop,
@@ -94,7 +94,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 var gcPauseMilliSecondsHistogram =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcPauseMilliSeconds);
                  gcPauseMilliSecondsHistogram.Record(pauseDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram.CurrentTime()));
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 var gcCollectionMilliSecondsHistogram =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcCollectionMilliSeconds);
                 gcCollectionMilliSecondsHistogram.Record(gcDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram.CurrentTime()));
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
             }
         }
 

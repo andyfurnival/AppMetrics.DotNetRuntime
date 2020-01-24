@@ -72,14 +72,7 @@ namespace Prometheus.DotNetRuntime
             /// Include metrics around the volume of work scheduled on the worker thread pool
             /// and the scheduling delays.
             /// </summary>
-            /// <param name="histogramBuckets">Buckets for the scheduling delay histogram</param>
-            /// <param name="sampleRate">
-            /// The sampling rate for thread pool scheduling events. A lower sampling rate reduces memory use
-            /// but reduces the accuracy of metrics produced (as a percentage of events are discarded).
-            /// If your application achieves a high level of throughput (thousands of work items scheduled per second on
-            /// the thread pool), it's recommend to reduce the sampling rate even further.
-            /// </param>
-            public Builder WithThreadPoolSchedulingStats(double[] histogramBuckets = null, SampleEvery sampleRate = SampleEvery.TenEvents)
+            public Builder WithThreadPoolSchedulingStats()
             {
                 StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(_metrics));
                 return this;
@@ -98,11 +91,7 @@ namespace Prometheus.DotNetRuntime
             /// <summary>
             /// Include metrics around volume of locks contended.
             /// </summary>
-            /// <param name="sampleRate">
-            /// The sampling rate for contention events (defaults to 100%). A lower sampling rate reduces memory use
-            /// but reduces the accuracy of metrics produced (as a percentage of events are discarded).
-            /// </param>
-            public Builder WithContentionStats(SampleEvery sampleRate = SampleEvery.TwoEvents)
+            public Builder WithContentionStats()
             {
                 StatsCollectors.Add(new ContentionStatsCollector(_metrics));
                 return this;
@@ -112,13 +101,7 @@ namespace Prometheus.DotNetRuntime
             /// Include metrics summarizing the volume of methods being compiled
             /// by the Just-In-Time compiler.
             /// </summary>
-            /// <param name="sampleRate">
-            /// The sampling rate for JIT events. A lower sampling rate reduces memory use
-            /// but reduces the accuracy of metrics produced (as a percentage of events are discarded).
-            /// If your application achieves a high level of throughput (thousands of work items scheduled per second on
-            /// the thread pool), it's recommend to reduce the sampling rate even further.
-            /// </param>
-            public Builder WithJitStats(SampleEvery sampleRate = SampleEvery.TenEvents)
+            public Builder WithJitStats()
             {
                 StatsCollectors.Add(new JitStatsCollector(_metrics));
                 return this;
