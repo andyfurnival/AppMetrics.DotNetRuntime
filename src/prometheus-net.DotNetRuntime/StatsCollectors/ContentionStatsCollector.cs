@@ -36,11 +36,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventKeywords Keywords => (EventKeywords)DotNetRuntimeEventSource.Keywords.Contention;
         public EventLevel Level => EventLevel.Informational;
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
-
-        public void UpdateMetrics()
-        {
-        }
-
+        
         public void ProcessEvent(EventWrittenEventArgs e)
         {
             switch (_eventPairTimer.TryGetDuration(e, out var duration))

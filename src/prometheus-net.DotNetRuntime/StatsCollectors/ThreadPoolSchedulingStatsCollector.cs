@@ -40,10 +40,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventKeywords Keywords => (EventKeywords) (FrameworkEventSource.Keywords.ThreadPool);
         public EventLevel Level => EventLevel.Verbose;
         public Guid EventSourceGuid => FrameworkEventSource.Id;
-
-        public void UpdateMetrics()
-        {
-        }
         
         public void ProcessEvent(EventWrittenEventArgs e)
         {

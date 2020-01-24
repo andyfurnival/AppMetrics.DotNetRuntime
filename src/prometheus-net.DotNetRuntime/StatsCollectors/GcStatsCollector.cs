@@ -60,19 +60,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
         public EventKeywords Keywords => (EventKeywords) DotNetRuntimeEventSource.Keywords.GC;
         public EventLevel Level => EventLevel.Verbose;
-        
-        public void UpdateMetrics()
-        {
-            var gcCollectionMilliSecondsHistogram =
-                _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds);
-            
-            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram));
-            
-            var gcPauseMilliSecondsHistogram =
-                _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds);
-            
-            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram));
-        }
 
         public void ProcessEvent(EventWrittenEventArgs e)
         {
@@ -106,7 +93,10 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
             if (_gcPauseEventTimer.TryGetDuration(e, out var pauseDuration) == DurationResult.FinalWithDuration)
             {
-                _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds, pauseDuration.TotalMilliseconds.RoundToLong());
+                var gcPauseMilliSecondsHistogram =
+                    _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcPauseMilliSeconds);
+                 gcPauseMilliSecondsHistogram.Update(pauseDuration.TotalMilliseconds.RoundToLong());
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram));
                 return;
             }
 
@@ -117,7 +107,10 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
 
             if (_gcEventTimer.TryGetDuration(e, out var gcDuration, out var gcData) == DurationResult.FinalWithDuration)
             {
-                _metrics.Measure.Histogram.Update(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds, gcDuration.TotalMilliseconds.RoundToLong());
+                var gcCollectionMilliSecondsHistogram =
+                    _metrics.Provider.Histogram.Instance(DotNetRuntimeMetricsRegistry.Histograms.GcCollectionMilliSeconds);
+                gcCollectionMilliSecondsHistogram.Update(gcDuration.TotalMilliseconds.RoundToLong());
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram));
             }
         }
 

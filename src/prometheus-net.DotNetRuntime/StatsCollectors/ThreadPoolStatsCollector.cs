@@ -35,10 +35,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventKeywords Keywords => (EventKeywords) DotNetRuntimeEventSource.Keywords.Threading;
         public EventLevel Level => EventLevel.Informational;
 
-        public void UpdateMetrics()
-        {
-        }
-
         public void ProcessEvent(EventWrittenEventArgs e)
         {
             switch (e.EventId)

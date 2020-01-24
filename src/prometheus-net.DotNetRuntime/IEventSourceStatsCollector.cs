@@ -36,10 +36,5 @@ namespace Prometheus.DotNetRuntime
         /// Implementors should listen to events and perform some kind of aggregation, emitting this to prometheus.
         /// </remarks>
         void ProcessEvent(EventWrittenEventArgs e);
-
-        /// <summary>
-        /// Called before each collection. Any values in collectors managed by this instance should now be brought up to date.
-        /// </summary>
-        void UpdateMetrics();
     }
 }

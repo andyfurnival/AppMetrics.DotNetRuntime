@@ -39,12 +39,6 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
         public EventLevel Level => EventLevel.Verbose;
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;
 
-        public void UpdateMetrics()
-        {
-            var methodsJittedMsTotalCounter = _metrics.Provider.Counter.Instance(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal);
-            _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio(methodsJittedMsTotalCounter));
-        }
-
         public void ProcessEvent(EventWrittenEventArgs e)
         {
             if (_eventPairTimer.TryGetDuration(e, out var duration) == DurationResult.FinalWithDuration)
@@ -56,6 +50,9 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                 
                 _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue), _samplingRate.SampleEvery);
                 _metrics.Measure.Counter.Increment(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue), (duration.TotalMilliseconds * _samplingRate.SampleEvery).RoundToLong());
+                
+                var methodsJittedMsTotalCounter = _metrics.Provider.Counter.Instance(DotNetRuntimeMetricsRegistry.Counters.MethodsJittedMilliSecondsTotal);
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio, _jitCpuRatio.CalculateConsumedRatio(methodsJittedMsTotalCounter));
             }
         }
     }

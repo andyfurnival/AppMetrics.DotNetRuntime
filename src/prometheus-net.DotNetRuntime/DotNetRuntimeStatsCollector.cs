@@ -50,22 +50,7 @@ namespace Prometheus.DotNetRuntime
 
             SetupConstantMetrics(metrics);
         }
-
-        public void UpdateMetrics()
-        {
-            foreach (var sc in _statsCollectors)
-            {
-                try
-                {
-                    sc.UpdateMetrics();
-                }
-                catch (Exception e)
-                {
-                    _errorHandler(e);
-                }
-            }
-        }
-
+        
         public void Dispose()
         {
             try
