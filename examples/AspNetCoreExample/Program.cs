@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Runtime;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.AspNetCore;
+using App.Metrics.Counter;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -17,21 +17,16 @@ namespace AspNetCoreExample
     {
         public static void Main(string[] args)
         {
-            if (Environment.GetEnvironmentVariable("NOMON") == null)
-            {
-                Console.WriteLine("Enabling prometheus-net.DotNetStats...");
-                DotNetRuntimeStatsBuilder.Customize()
-                    .WithThreadPoolSchedulingStats()
-                    .WithContentionStats()
-                    .WithGcStats()
-                    .WithJitStats()
-                    .WithThreadPoolStats()
-                    .WithErrorHandler(ex => Console.WriteLine("ERROR: " + ex.ToString()))
-                    //.WithDebuggingMetrics(true);
-                    .StartCollecting();
-            }
+            
 
-            CreateWebHostBuilder(args).Build().Run();
+            CreateWebHostBuilder(args)
+                .ConfigureMetricsWithDefaults(m =>
+                    {
+                        m.Report.ToGraphite($"net.tcp://localhost:2003", TimeSpan.FromSeconds(10));
+                    })
+                .UseMetrics()
+                .Build()
+                .Run();
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>

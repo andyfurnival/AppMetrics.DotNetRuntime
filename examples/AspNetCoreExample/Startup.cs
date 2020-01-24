@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.Counter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Prometheus;
+using Prometheus.DotNetRuntime;
 
 namespace AspNetCoreExample
 {
@@ -42,6 +38,23 @@ namespace AspNetCoreExample
                 app.UseHsts();
             }
 
+            var metrics = app.ApplicationServices.GetService<IMetrics>();
+            metrics.Measure.Counter.Increment(new CounterOptions(){Name = "test-counter", Context = "some-context"});
+            if (Environment.GetEnvironmentVariable("NOMON") == null)
+            {
+                Console.WriteLine("Enabling prometheus-net.DotNetStats...");
+
+                DotNetRuntimeStatsBuilder.Customize(metrics)
+                    .WithThreadPoolSchedulingStats()
+                    .WithContentionStats()
+                    .WithGcStats()
+                    .WithJitStats()
+                    .WithThreadPoolStats()
+                    .WithErrorHandler(ex => Console.WriteLine("ERROR: " + ex.ToString()))
+                    //.WithDebuggingMetrics(true);
+                    .StartCollecting();
+            }
+
             app.UseHttpsRedirection();
             app.UseRouting(); 
             
@@ -50,8 +63,6 @@ namespace AspNetCoreExample
                 // Mapping of endpoints goes here:
                 endpoints.MapControllers();
             });
-            
-            app.UseMetricServer();
         }
     }
 }
