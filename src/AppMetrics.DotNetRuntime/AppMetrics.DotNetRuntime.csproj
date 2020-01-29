@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <PromMajorVersion Condition="$(PromMajorVersion) == ''">3</PromMajorVersion>
-        <RootNamespace>Prometheus.DotNetRuntime</RootNamespace>
+        <RootNamespace>AppMetrics.DotNetRuntime</RootNamespace>
         <AssemblyName>AppMetrics.DotNetRuntime</AssemblyName>
         <PackageId>AppMetrics.DotNetRuntime</PackageId>
         <Version>0.4.0</Version>
