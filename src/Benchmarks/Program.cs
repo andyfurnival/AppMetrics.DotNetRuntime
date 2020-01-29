@@ -11,8 +11,8 @@ using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Horology;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-using Prometheus.DotNetRuntime;
-using Prometheus.DotNetRuntime.StatsCollectors.Util;
+using AppMetrics.DotNetRuntime;
+using AppMetrics.DotNetRuntime.StatsCollectors.Util;
 
 namespace Benchmarks
 {
@@ -20,7 +20,7 @@ namespace Benchmarks
     {
         static void Main(string[] args)
         {
-            var p = new Prometheus.MetricServer(12203);
+            var p = new AppMetrics.MetricServer(12203);
             p.Start();
 
             var collector = DotNetRuntimeStatsBuilder.Default().StartCollecting();
