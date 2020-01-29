@@ -4,10 +4,10 @@
         <RootNamespace>Prometheus.DotNetRuntime</RootNamespace>
         <AssemblyName>AppMetrics.DotNetRuntime</AssemblyName>
         <PackageId>AppMetrics.DotNetRuntime</PackageId>
-        <Version>0.3.0</Version>
+        <Version>0.4.0</Version>
         <Authors>Seif Attar</Authors>
         <PackageTags>AppMetrics runtime metrics gc jit threadpool contention stats</PackageTags>
-        <PackageProjectUrl>https://github.com/djluck/AppMetrics.DotNetRuntime</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/opentable/AppMetrics.DotNetRuntime</PackageProjectUrl>
         <Description>
             Exposes .NET core runtime metrics (GC, JIT, lock contention, thread pool) using the AppMetrics package.
         </Description>
