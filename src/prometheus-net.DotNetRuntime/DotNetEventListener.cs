@@ -6,6 +6,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using App.Metrics;
 using App.Metrics.Counter;
+using App.Metrics.Timer;
 using Prometheus.DotNetRuntime.StatsCollectors;
 using Prometheus.DotNetRuntime.StatsCollectors.Util;
 
@@ -13,7 +14,7 @@ namespace Prometheus.DotNetRuntime
 {
     internal sealed class DotNetEventListener : EventListener
     {
-        private static CounterOptions _cpuConsumed;
+        private static TimerOptions _cpuConsumed;
         private static CounterOptions _eventTypeCounts;
 
         private readonly IEventSourceStatsCollector _collector;
@@ -30,11 +31,10 @@ namespace Prometheus.DotNetRuntime
 
             if (_enableDebugging)
             {
-                _cpuConsumed = new CounterOptions()
+                _cpuConsumed = new TimerOptions()
                 {
                     Context = "DotNetRuntime",
                     MeasurementUnit = Unit.None,
-                    ReportItemPercentages = false,
                     Name = "dotnet_debug_cpu_milliseconds_total",
                     Tags = new MetricTags("collector", collector.GetType().Name.ToSnakeCase())
                 };
@@ -67,22 +67,20 @@ namespace Prometheus.DotNetRuntime
         
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            var sp = new Stopwatch();
             try
             {
                 if (_enableDebugging)
                 {
-                    _metrics.Measure.Counter.Increment(_eventTypeCounts, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}));
-                    sp.Restart();
+                    _metrics.Provider.Timer.Instance(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}))
+                        .StartRecording();
                 }
                 
                 _collector.ProcessEvent(eventData);
 
                 if (_enableDebugging)
                 {
-                    sp.Stop();
-                    
-                    _metrics.Measure.Counter.Increment(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}), sp.Elapsed.TotalMilliseconds.RoundToLong());
+                    _metrics.Provider.Timer.Instance(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}))
+                        .EndRecording();
                 }
             }
             catch (Exception e)

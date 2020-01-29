@@ -93,7 +93,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             {
                 var gcPauseMilliSecondsHistogram =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcPauseMilliSeconds);
-                 gcPauseMilliSecondsHistogram.Record(pauseDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
+                 gcPauseMilliSecondsHistogram.Record(pauseDuration.Ticks * 100, TimeUnit.Nanoseconds);
                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
                 return;
             }
@@ -107,7 +107,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
             {
                 var gcCollectionMilliSecondsHistogram =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcCollectionMilliSeconds);
-                gcCollectionMilliSecondsHistogram.Record(gcDuration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
+                gcCollectionMilliSecondsHistogram.Record(gcDuration.Ticks * 100, TimeUnit.Nanoseconds);
                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
             }
         }

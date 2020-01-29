@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
         <IsPackable>false</IsPackable>
         <RootNamespace>Prometheus.DotNetRuntime.Tests</RootNamespace>
         <Configurations>ReleaseV2;DebugV2;DebugV3;ReleaseV3</Configurations>
@@ -19,6 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="App.Metrics.Reporting.Console" Version="3.2.0" />
         <PackageReference Include="Fasterflect.Netstandard" Version="1.0.9" />
         <PackageReference Include="nunit" Version="3.11.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />

@@ -2,6 +2,9 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.Meter;
+using App.Metrics.Timer;
 using NUnit.Framework;
 using Prometheus.DotNetRuntime.StatsCollectors;
 
@@ -12,9 +15,9 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
     {
         protected override ContentionStatsCollector CreateStatsCollector()
         {
-            return new ContentionStatsCollector(SampleEvery.OneEvent);
+            return new ContentionStatsCollector(MetricsClient);
         }
-        
+
         [Test]
         public void Will_measure_no_contention_on_an_uncontested_lock()
         {
@@ -27,8 +30,8 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             }
             
             // assert
-            Assert.That(StatsCollector.ContentionTotal.Value, Is.EqualTo(0));
-            Assert.That(StatsCollector.ContentionSecondsTotal.Value, Is.EqualTo(0)); 
+            Assert.That(MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ContentionTotal).GetValueOrDefault().Count, Is.EqualTo(0));
+            Assert.That(MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).GetValueOrDefault().Histogram.Sum, Is.EqualTo(0));
         }
         
         /// <summary>
@@ -40,6 +43,7 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         [Repeat(5)]
         public async Task Will_measure_contention_on_a_contested_lock()
         {
+            MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Reset();
             // arrange
             const int numThreads = 10;
             const int sleepForMs = 50;
@@ -53,21 +57,24 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
                 {
                     lock (key)
                     {
-                        Thread.Sleep(sleepForMs);
+                        Task.Delay(TimeSpan.FromMilliseconds(sleepForMs)).GetAwaiter().GetResult();
+                        //Thread.Sleep(TimeSpan.FromMilliseconds(sleepForMs));
                     }        
                 }));
             
             await Task.WhenAll(tasks);
-            
+
             // assert
-            
             // Why -1? The first thread will not contend the lock 
             const int numLocksContended = numThreads - 1;
-            Assert.That(() => StatsCollector.ContentionTotal.Value, Is.EqualTo(numLocksContended).After(200, 10));
+            Assert.That( MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ContentionTotal).GetValueOrDefault().Count, 
+                Is.EqualTo(numLocksContended));
             
             // Pattern of expected contention times is: 50ms, 100ms, 150ms, etc.
             var expectedDelay = TimeSpan.FromMilliseconds(Enumerable.Range(1, numLocksContended).Aggregate(sleepForMs, (acc, next) => acc + (sleepForMs * next)));
-            Assert.That(StatsCollector.ContentionSecondsTotal.Value, Is.EqualTo(expectedDelay.TotalSeconds).Within(sleepForMs)); 
+            var actualValueInNanoSeconds = MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).GetValueOrDefault().Histogram.Sum;
+            Assert.That(actualValueInNanoSeconds, Is.EqualTo(expectedDelay.Ticks * 100).Within((sleepForMs) * 1000000)); 
+            
         }
     }
 }

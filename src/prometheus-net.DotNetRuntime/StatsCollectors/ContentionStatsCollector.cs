@@ -43,7 +43,7 @@ namespace Prometheus.DotNetRuntime.StatsCollectors
                     return;
                 
                 case DurationResult.FinalWithDuration:
-                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record(duration.TotalMilliseconds.RoundToLong(), TimeUnit.Milliseconds);
+                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
                     return;
 
                 default:

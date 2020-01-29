@@ -1,10 +1,13 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.Gauge;
+using App.Metrics.Meter;
+using App.Metrics.Reporting.Console;
+using App.Metrics.Timer;
 using NUnit.Framework;
-#if PROMV2
-using Prometheus.Advanced;    
-#endif
 using Prometheus.DotNetRuntime;
 using Prometheus.DotNetRuntime.StatsCollectors;
 
@@ -16,17 +19,14 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
     {
         private DotNetEventListener _eventListener;
         protected TStatsCollector StatsCollector { get; private set; }
+        protected IMetricsRoot MetricsClient { get; private set; }
 
         [SetUp]
         public void SetUp()
         {
+            MetricsClient = CreateMetricsClient();
             StatsCollector = CreateStatsCollector();
-#if PROMV2
-            StatsCollector.RegisterMetrics(new MetricFactory(new DefaultCollectorRegistry()));
-#elif PROMV3
-            StatsCollector.RegisterMetrics(Metrics.WithCustomRegistry(Metrics.NewCustomRegistry()));
-#endif
-            _eventListener = new DotNetEventListener(StatsCollector, null, false);
+            _eventListener = new DotNetEventListener(StatsCollector, exception => Console.Write(exception.Message), true, MetricsClient);
             
             // wait for event listener thread to spin up
             while (!_eventListener.StartedReceivingEvents)
@@ -45,5 +45,51 @@ namespace Prometheus.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         }
 
         protected abstract TStatsCollector CreateStatsCollector();
+
+        protected virtual IMetricsRoot CreateMetricsClient()
+        {
+            return AppMetrics.CreateDefaultBuilder().Report.Using<ConsoleMetricsReporter>(TimeSpan.FromMilliseconds(1000)).Build();
+        }
+        
+        public MeterValueSource GetMeter(string name)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Meters.Single(g => g.MultidimensionalName == name);
+        }
+        
+        public MeterValueSource GetMeter(string name, string substring)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Meters.Single(g => g.MultidimensionalName == name  && g.Tags.AsMetricName(name)
+                                        .Contains(substring));
+        }
+        
+        public TimerValueSource GetTimer(string name)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Timers.Single(g => g.MultidimensionalName == name);
+        }
+        
+        public TimerValueSource GetTimer(string name, string substring)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Timers.Single(g => g.MultidimensionalName == name  && g.Tags.AsMetricName(name)
+                                        .Contains(substring));
+        }
+        
+        public GaugeValueSource GetGauage(string name)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Gauges.Single(g => g.MultidimensionalName == name);
+        }
+        
+        public GaugeValueSource GetGauage(string name, string substring)
+        {
+            return MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
+                .Gauges.Single(g => g.MultidimensionalName == name
+                                    && g.Tags.AsMetricName(name)
+                                        .Contains(substring)
+                );
+        }
     }
 }
