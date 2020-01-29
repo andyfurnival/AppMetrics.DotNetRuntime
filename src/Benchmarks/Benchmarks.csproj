@@ -28,11 +28,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\prometheus-net.DotNetRuntime\prometheus-net.DotNetRuntime.csproj" />
+      <PackageReference Include="App.Metrics" Version="3.2.0" />
+      <PackageReference Include="BenchmarkDotNet" Version="0.11.3" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="BenchmarkDotNet" Version="0.11.3" />
+      <ProjectReference Include="..\AppMetrics.DotNetRuntime\AppMetrics.DotNetRuntime.csproj" />
     </ItemGroup>
 
 </Project>

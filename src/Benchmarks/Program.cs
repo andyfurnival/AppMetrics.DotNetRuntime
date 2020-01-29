@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using App.Metrics;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Environments;
@@ -14,17 +15,20 @@ using BenchmarkDotNet.Running;
 using AppMetrics.DotNetRuntime;
 using AppMetrics.DotNetRuntime.StatsCollectors.Util;
 
+
 namespace Benchmarks
 {
     public class Program
     {
         static void Main(string[] args)
         {
-            var p = new AppMetrics.MetricServer(12203);
-            p.Start();
-
-            var collector = DotNetRuntimeStatsBuilder.Default().StartCollecting();
-            
+            if (args.Length > 0 && args[0] == "metrics")
+            {
+                App.Metrics.AppMetrics.CreateDefaultBuilder().Build();
+                var collector = DotNetRuntimeStatsBuilder.Default(
+                        App.Metrics.AppMetrics.CreateDefaultBuilder().Build()).WithDebuggingMetrics(false)
+                    .StartCollecting();
+            }
 
             var tasks = Enumerable.Range(1, 2_000_000)
                 .Select(_ => Task.Run(() => 1))
@@ -37,9 +41,8 @@ namespace Benchmarks
             Task.WaitAll(tasks);
 
             Console.WriteLine("Done");
-            Console.ReadLine();
-            
-            return;
+
+           // return;
             BenchmarkRunner.Run<TestBenchmark>(
                 DefaultConfig.Instance
                     .With(
@@ -71,7 +74,7 @@ namespace Benchmarks
             [MethodImpl(MethodImplOptions.NoOptimization)]
             public long TestInterlockedIncLong() => Interlocked.Increment(ref l1);
 	
-            private EventPairTimer<int> timer = new EventPairTimer<int>(1, 2, x => x.EventId, SampleEvery.OneEvent);
+            private EventPairTimer<int> timer = new EventPairTimer<int>(1, 2, x => x.EventId);
 
             private EventWrittenEventArgs eventArgs;
 
