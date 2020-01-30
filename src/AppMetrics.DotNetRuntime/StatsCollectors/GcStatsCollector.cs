@@ -42,17 +42,11 @@ namespace AppMetrics.DotNetRuntime.StatsCollectors
         private readonly Dictionary<DotNetRuntimeEventSource.GCReason, string> _gcReasonToLabels = LabelGenerator.MapEnumToLabelValues<DotNetRuntimeEventSource.GCReason>();
         private readonly Ratio _gcCpuRatio = Ratio.ProcessTotalCpu();
         private readonly Ratio _gcPauseRatio = Ratio.ProcessTime();
-        private readonly double[] _histogramBuckets;
         private readonly IMetrics _metrics;
 
-        public GcStatsCollector(double[] histogramBuckets, IMetrics metrics)
+        public GcStatsCollector(IMetrics metrics)
         {
-            _histogramBuckets = histogramBuckets;
             _metrics = metrics;
-        }
-
-        public GcStatsCollector(IMetrics metrics) : this(Constants.DefaultHistogramBuckets, metrics)
-        {
         }
 
         public Guid EventSourceGuid => DotNetRuntimeEventSource.Id;

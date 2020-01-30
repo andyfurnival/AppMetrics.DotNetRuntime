@@ -76,16 +76,5 @@ namespace AppMetrics.DotNetRuntime.StatsCollectors.Util
                 return Math.Min(1.0, eventsConsumedTimeMilliSeconds / consumedProcessTime.TotalMilliseconds);
             }
         }
-
-        public double CalculateConsumedRatio(ICounter eventCpuConsumedTotalMilliSeconds)
-        {
-            return CalculateConsumedRatio(eventCpuConsumedTotalMilliSeconds
-                .GetValueOrDefault().Count);            
-        }
-        
-        public double CalculateConsumedRatio(IHistogram eventCpuConsumedMilleSeconds)
-        {
-            return CalculateConsumedRatio(eventCpuConsumedMilleSeconds.GetValueOrDefault().Sum);            
-        }
     }
 }

@@ -82,18 +82,18 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         [Test]
         public void When_a_garbage_collection_is_performed_then_the_finalization_queue_is_updated()
         {
+            MetricsClient.Provider.Gauge.Instance(DotNetRuntimeMetricsRegistry.Gauges.GcFinalizationQueueLength)
+                .Reset();
+            
             // arrange
             {
                 var finalizable = new FinalizableTest();
                 finalizable = null;
             }
-            GC.Collect(0);
-
-            Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
-            Assert.That(() => MetricsClient.Snapshot.GetForContext(DotNetRuntimeMetricsRegistry.ContextName)
-                    .Gauges.Single( g=> g.MultidimensionalName == DotNetRuntimeMetricsRegistry.Gauges.GcFinalizationQueueLength.Name)
-                    .Value,
-                Is.GreaterThan(0).After(200, 10));
+            GC.Collect();
+            
+            Assert.That(() => GetGauage(DotNetRuntimeMetricsRegistry.Gauges.GcFinalizationQueueLength.Name).Value,
+                Is.GreaterThan(0).After(2000, 10));
         }
 
         [Test]

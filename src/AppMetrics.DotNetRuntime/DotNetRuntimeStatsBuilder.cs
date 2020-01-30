@@ -114,7 +114,7 @@ namespace AppMetrics.DotNetRuntime
             /// <param name="histogramBuckets">Buckets for the GC collection and pause histograms</param>
             public Builder WithGcStats(double[] histogramBuckets = null)
             {
-                StatsCollectors.Add(new GcStatsCollector(histogramBuckets ?? Constants.DefaultHistogramBuckets, _metrics));
+                StatsCollectors.Add(new GcStatsCollector(_metrics));
                 return this;
             }
 
