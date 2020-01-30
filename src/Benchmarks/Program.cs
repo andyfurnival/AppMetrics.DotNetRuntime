@@ -22,19 +22,29 @@ namespace Benchmarks
     {
         static void Main(string[] args)
         {
-            if (args.Length > 0 && args[0] == "metrics")
-            {
-                App.Metrics.AppMetrics.CreateDefaultBuilder().Build();
-                var collector = DotNetRuntimeStatsBuilder.Default(
-                        App.Metrics.AppMetrics.CreateDefaultBuilder().Build()).WithDebuggingMetrics(false)
-                    .StartCollecting();
-            }
-
             var tasks = Enumerable.Range(1, 2_000_000)
                 .Select(_ => Task.Run(() => 1))
                 .ToArray();
-            
+
             var b = new byte[1024 * 1000];
+            if (args.Length > 0 && args[0] == "metrics")
+            {
+                var metrics = App.Metrics.AppMetrics.CreateDefaultBuilder().Build();
+                var collector = DotNetRuntimeStatsBuilder.Customize(metrics)
+                    .WithContentionStats()
+                    .WithThreadPoolStats()
+                    .WithThreadPoolSchedulingStats();
+                
+                if (args.Any(x => x == "jit"))
+                    collector.WithJitStats();
+                if(args.Any(x => x=="gc"))
+                    collector.WithGcStats();
+                        
+                collector
+                    .WithDebuggingMetrics(false)
+                    .StartCollecting();
+            }
+
             var b2 = new byte[1024 * 1000];
             var b3 = new byte[1024 * 1000];
 
