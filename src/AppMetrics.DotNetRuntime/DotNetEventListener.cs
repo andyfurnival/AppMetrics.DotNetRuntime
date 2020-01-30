@@ -33,7 +33,7 @@ namespace AppMetrics.DotNetRuntime
             {
                 _cpuConsumed = new TimerOptions()
                 {
-                    Context = "DotNetRuntime",
+                    Context = DotNetRuntimeMetricsRegistry.ContextName,
                     MeasurementUnit = Unit.None,
                     Name = "dotnet_debug_cpu_milliseconds_total",
                     Tags = new MetricTags("collector", collector.GetType().Name.ToSnakeCase())
