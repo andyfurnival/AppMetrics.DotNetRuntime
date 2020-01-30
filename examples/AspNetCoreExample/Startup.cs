@@ -51,7 +51,7 @@ namespace AspNetCoreExample
                     .WithJitStats()
                     .WithThreadPoolStats()
                     .WithErrorHandler(ex => Console.WriteLine("ERROR: " + ex.ToString()))
-                    //.WithDebuggingMetrics(true);
+                    .WithDebuggingMetrics(true)
                     .StartCollecting();
             }
 

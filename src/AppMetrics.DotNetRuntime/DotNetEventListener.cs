@@ -35,7 +35,8 @@ namespace AppMetrics.DotNetRuntime
                 {
                     Context = DotNetRuntimeMetricsRegistry.ContextName,
                     MeasurementUnit = Unit.None,
-                    Name = "dotnet_debug_cpu_milliseconds_total",
+                    DurationUnit = TimeUnit.Nanoseconds,
+                    Name = "dotnet_debug_cpu_nanoseconds_total",
                     Tags = new MetricTags("collector", collector.GetType().Name.ToSnakeCase())
                 };
             }
@@ -71,17 +72,14 @@ namespace AppMetrics.DotNetRuntime
             {
                 if (_enableDebugging)
                 {
-                    _metrics.Provider.Timer.Instance(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}))
-                        .StartRecording();
+                    _metrics.Provider.Timer.Instance(_cpuConsumed,
+                            new MetricTags(new[] {"EventSource", "EventName"},
+                                new[] {eventData.EventSource.Name, eventData.EventName}))
+                        .Time(() => _collector.ProcessEvent(eventData));
+                    return;
                 }
-                
-                _collector.ProcessEvent(eventData);
 
-                if (_enableDebugging)
-                {
-                    _metrics.Provider.Timer.Instance(_cpuConsumed, new MetricTags(new[]{"EventSource", "EventName"}, new []{eventData.EventSource.Name, eventData.EventName}))
-                        .EndRecording();
-                }
+                _collector.ProcessEvent(eventData);
             }
             catch (Exception e)
             {
