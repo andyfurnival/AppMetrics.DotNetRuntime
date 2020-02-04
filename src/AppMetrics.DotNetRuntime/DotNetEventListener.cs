@@ -43,7 +43,7 @@ namespace AppMetrics.DotNetRuntime
 
             _eventTypeCounts = new CounterOptions()
             {
-                Context = "DotNetRuntime",
+                Context = DotNetRuntimeMetricsRegistry.ContextName,
                 MeasurementUnit = Unit.Items,
                 ReportItemPercentages = false
             };
