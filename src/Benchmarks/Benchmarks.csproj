@@ -33,7 +33,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AppMetrics.DotNetRuntime\AppMetrics.DotNetRuntime.csproj" />
+      <ProjectReference Include="..\App.Metrics.DotNetRuntime\App.Metrics.DotNetRuntime.csproj" />
     </ItemGroup>
 
 </Project>

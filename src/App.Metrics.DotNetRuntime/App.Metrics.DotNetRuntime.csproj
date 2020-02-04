@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PromMajorVersion Condition="$(PromMajorVersion) == ''">3</PromMajorVersion>
+        <RootNamespace>App.Metrics.DotNetRuntime</RootNamespace>
+        <AssemblyName>App.Metrics.DotNetRuntime</AssemblyName>
+        <PackageId>App.Metrics.DotNetRuntime</PackageId>
+        <Version>0.5.1</Version>
+        <Authors>Seif Attar</Authors>
+        <PackageTags>App.Metrics runtime metrics gc jit threadpool contention stats</PackageTags>
+        <PackageProjectUrl>https://github.com/opentable/AppMetrics.DotNetRuntime</PackageProjectUrl>
+        <Description>
+            Exposes .NET core runtime metrics (GC, JIT, lock contention, thread pool) using the App.Metrics package.
+        </Description>
+        <PackageLicense>https://github.com/opentable/AppMetrics.DotNetRuntime/blob/master/LICENSE.txt</PackageLicense>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU</Platforms>
+        <TargetFrameworks>netcoreapp2.2;netcoreapp3.0;netstandard2.1;netstandard2.1</TargetFrameworks>
+        <LangVersion>8</LangVersion>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <NoWarn>1701;1702;CS1591;</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+        <PackageReference Include="System.Collections.Immutable" Version="1.6.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="App.Metrics" Version="3.2.0" />
+    </ItemGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
+        <DocumentationFile>bin\Release\App.Metrics.DotNetRuntime.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <DebugSymbols Condition=" '$(DebugSymbols)' == '' ">true</DebugSymbols>
+        <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
+    </PropertyGroup>
+</Project>

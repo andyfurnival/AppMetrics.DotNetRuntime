@@ -5,15 +5,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using App.Metrics;
+using App.Metrics.DotNetRuntime;
+using App.Metrics.DotNetRuntime.StatsCollectors.Util;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Horology;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-using AppMetrics.DotNetRuntime;
-using AppMetrics.DotNetRuntime.StatsCollectors.Util;
 
 
 namespace Benchmarks

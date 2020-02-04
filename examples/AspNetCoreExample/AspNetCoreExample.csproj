@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\AppMetrics.DotNetRuntime\AppMetrics.DotNetRuntime.csproj" />
+      <ProjectReference Include="..\..\src\App.Metrics.DotNetRuntime\App.Metrics.DotNetRuntime.csproj" />
     </ItemGroup>
 
     <ItemGroup>

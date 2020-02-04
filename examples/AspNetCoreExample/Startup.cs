@@ -1,7 +1,7 @@
 ﻿using System;
 using App.Metrics;
 using App.Metrics.Counter;
-using AppMetrics.DotNetRuntime;
+using App.Metrics.DotNetRuntime;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;

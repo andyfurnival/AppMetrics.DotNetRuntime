@@ -1,12 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppMetrics.DotNetRuntime", "src\AppMetrics.DotNetRuntime\AppMetrics.DotNetRuntime.csproj", "{A40AD08A-53CB-40F3-A6D8-6FFCEC024289}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App.Metrics.DotNetRuntime", "src\App.Metrics.DotNetRuntime\App.Metrics.DotNetRuntime.csproj", "{A40AD08A-53CB-40F3-A6D8-6FFCEC024289}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{31AD912F-A1DC-434A-8C8D-049F4BBD67D4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspNetCoreExample", "examples\AspNetCoreExample\AspNetCoreExample.csproj", "{D01E9ED3-E35C-4F44-A5AD-5350E43AA636}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppMetrics.DotNetRuntime.Tests", "src\AppMetrics.DotNetRuntime.Tests\AppMetrics.DotNetRuntime.Tests.csproj", "{B0D28724-ED40-4A1B-9634-F097097E5C34}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App.Metrics.DotNetRuntime.Tests", "src\App.Metrics.DotNetRuntime.Tests\App.Metrics.DotNetRuntime.Tests.csproj", "{B0D28724-ED40-4A1B-9634-F097097E5C34}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "src\Benchmarks\Benchmarks.csproj", "{3295713D-02CA-4B4D-9111-2DEA08FF47F7}"
 EndProject
