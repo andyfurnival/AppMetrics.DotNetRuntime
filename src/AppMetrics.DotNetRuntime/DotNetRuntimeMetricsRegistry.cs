@@ -70,26 +70,6 @@ namespace AppMetrics.DotNetRuntime
                 Name = "gc_allocated_bytes",
                 MeasurementUnit = Unit.Bytes
             };
-            
-            public static readonly MeterOptions ScheduledCount = new MeterOptions()
-            {
-                Context = ContextName,
-                Name = "threadpool_scheduled",
-                MeasurementUnit = Unit.Events
-            };
-                        
-            public static readonly MeterOptions MethodsJittedTotal = new MeterOptions()
-            {
-                Context = ContextName,
-                Name = "jit_method",
-                MeasurementUnit = Unit.Items
-            };
-            public static readonly MeterOptions ContentionTotal = new MeterOptions()
-            {
-                Context = ContextName,
-                Name = "contention",
-                MeasurementUnit = Unit.Events
-            };
 
             public static readonly MeterOptions GcCollectionReasons = new MeterOptions()
             {

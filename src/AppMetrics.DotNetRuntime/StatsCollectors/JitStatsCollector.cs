@@ -48,7 +48,6 @@ namespace AppMetrics.DotNetRuntime.StatsCollectors
                 var methodFlags = (uint)e.Payload[5];
                 var dynamicLabelValue = (methodFlags & 0x1) == 0x1 ? LabelValueTrue : LabelValueFalse;
                 
-                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags(DynamicLabel, dynamicLabelValue));
                 _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags(DynamicLabel, dynamicLabelValue)).Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
                 
                 var methodsJittedMsTotalCounter = _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal);

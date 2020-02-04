@@ -36,19 +36,12 @@ namespace AppMetrics.DotNetRuntime.StatsCollectors
         
         public void ProcessEvent(EventWrittenEventArgs e)
         {
-            switch (_eventPairTimer.TryGetDuration(e, out var duration))
+            if(_eventPairTimer.TryGetDuration(e, out var duration) != DurationResult.FinalWithDuration)
             {
-                case DurationResult.Start:
-                    _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.ContentionTotal);
-                    return;
-                
-                case DurationResult.FinalWithDuration:
-                    _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
-                    return;
-
-                default:
-                    return;
+                return;
             }
+            
+            _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
         }
     }
 }

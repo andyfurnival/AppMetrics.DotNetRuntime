@@ -30,7 +30,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             }
             
             // assert
-            Assert.That(MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ContentionTotal).GetValueOrDefault().Count, Is.EqualTo(0));
+            Assert.That(MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).GetValueOrDefault().Rate.Count, Is.EqualTo(0));
             Assert.That(MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).GetValueOrDefault().Histogram.Sum, Is.EqualTo(0));
         }
         
@@ -67,7 +67,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             // assert
             // Why -1? The first thread will not contend the lock 
             const int numLocksContended = numThreads - 1;
-            Assert.That( MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ContentionTotal).GetValueOrDefault().Count, 
+            Assert.That( MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ContentionMilliSecondsTotal).GetValueOrDefault().Rate.Count, 
                 Is.GreaterThanOrEqualTo(numLocksContended));
             
             // Pattern of expected contention times is: 50ms, 100ms, 150ms, etc.

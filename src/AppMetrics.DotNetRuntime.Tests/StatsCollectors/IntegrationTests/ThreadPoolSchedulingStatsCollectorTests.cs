@@ -20,7 +20,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         [Repeat(5)]
         public async Task When_work_is_queued_on_the_thread_pool_then_the_queued_and_scheduled_work_is_measured()
         {
-            MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ScheduledCount).Reset();
+            MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay).Reset();
             // act (Task.Run will execute the function on the thread pool)
             // There seems to be either a bug in the implementation of .NET core or a bug in my understanding...
             // First call to Task.Run triggers a queued event but not a queue event. For now, call twice 
@@ -29,7 +29,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             await Task.Run(() => sp.Stop());
             sp.Stop();
             
-            Assert.That(GetMeter(DotNetRuntimeMetricsRegistry.Meters.ScheduledCount.Name).Value.Count, 
+            Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay.Name).Value.Rate.Count, 
                 Is.GreaterThanOrEqualTo(1).After(100, 10));
             Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay.Name).Value.Histogram.Count,
                 Is.GreaterThanOrEqualTo(1));
@@ -49,7 +49,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         [Test]
         public async Task When_many_items_of_work_is_queued_on_the_thread_pool_then_the_queued_and_scheduled_work_is_measured()
         {
-            MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.ScheduledCount).Reset();
+            MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay).Reset();
          
             // act (Task.Run will execute the function on the thread pool)
             // There seems to be either a bug in the implementation of .NET core or a bug in my understanding...
@@ -63,7 +63,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
                 await Task.Run(() => sp.Stop());
             }
             
-            Assert.That(GetMeter(DotNetRuntimeMetricsRegistry.Meters.ScheduledCount.Name).Value.Count, 
+            Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay.Name).Value.Rate.Count,
                 Is.GreaterThanOrEqualTo(100).After(100, 10));
 
             Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.ScheduleDelay.Name).Value.Histogram.Count,

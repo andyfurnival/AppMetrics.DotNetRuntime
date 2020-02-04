@@ -24,13 +24,12 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         public void When_a_method_is_jitted_then_its_compilation_is_measured()
         {
             // arrange
-            MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags("dynamic", "true")).Reset();
             MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags("dynamic", "true")).Reset();
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             
             Thread.Sleep(100);
             var previousMethodJitted =
-                GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:false").Value.Count;
+                GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:false").Value.Rate.Count;
             var previousMethodJittedMilliSeconds =
                 GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:false").Value.Histogram.Sum;
             
@@ -40,7 +39,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             // assert
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             Thread.Sleep(100);
-            Assert.That(() => GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:false").Value.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 1).After(100, 10));
+            Assert.That(() => GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:false").Value.Rate.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 1).After(100, 10));
             Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:false").Value.Histogram.Sum, Is.GreaterThan(previousMethodJittedMilliSeconds));
         }
 
@@ -63,12 +62,11 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         {
             
             // arrange
-            MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags("dynamic", "true")).Reset();
             MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags("dynamic", "true")).Reset();
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             
             var previousMethodJitted =
-                GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:true").Value.Count;
+                GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Rate.Count;
             var previousMethodJittedMilliSeconds =
                 GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Histogram.Sum;
             
@@ -78,7 +76,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             // assert
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             
-            Assert.That(() => GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:true").Value.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 1).After(100, 10));
+            Assert.That(() => GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Rate.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 1).After(100, 10));
             Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Histogram.Sum, Is.GreaterThan(previousMethodJittedMilliSeconds));
         }
 
@@ -106,14 +104,13 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
         [Test]
         public void When_many_methods_are_jitted_then_their_compilation_is_measured()
         {
-            MetricsClient.Provider.Meter.Instance(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal, new MetricTags("dynamic", "true")).Reset();
             MetricsClient.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal, new MetricTags("dynamic", "true")).Reset();
             // arrange
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             
             Thread.Sleep(100);
             var previousMethodJitted =
-                GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:true").Value.Count;
+                GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Rate.Count;
             var previousMethodJittedMilliSeconds =
                 GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Histogram.Sum;
             
@@ -125,7 +122,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             Task.WaitAll((MetricsClient.ReportRunner.RunAllAsync().ToArray()));
             
             // assert
-            Assert.That(() => GetMeter(DotNetRuntimeMetricsRegistry.Meters.MethodsJittedTotal.Name, "dynamic:true").Value.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 20).After(100, 10));
+            Assert.That(() => GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Rate.Count, Is.GreaterThanOrEqualTo(previousMethodJitted  + 20).After(100, 10));
             Assert.That(GetTimer(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal.Name, "dynamic:true").Value.Histogram.Sum, Is.GreaterThan(previousMethodJittedMilliSeconds + sp.Elapsed.TotalMilliseconds).Within(100.0));
         }
 
