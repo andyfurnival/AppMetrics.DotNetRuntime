@@ -12,6 +12,6 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.101'
-    - run: dotnet pack src/AppMetrics.DotNetRuntime --include-symbols -c "Release" --output "build/"
-    - run: dotnet nuget push "build/AppMetrics.DotNetRuntime.*.symbols.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s "https://api.nuget.org/v3/index.json" -n true
+    - run: dotnet pack src/App.Metrics.DotNetRuntime --include-symbols -c "Release" --output "build/"
+    - run: dotnet nuget push "build/App.Metrics.DotNetRuntime.*.symbols.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s "https://api.nuget.org/v3/index.json" -n true
 
