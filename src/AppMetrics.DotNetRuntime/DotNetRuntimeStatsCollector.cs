@@ -78,7 +78,7 @@ namespace AppMetrics.DotNetRuntime
             {
                 var buildInfo = new GaugeOptions()
                 {
-                    Context = "DotNetRuntime",
+                    Context = DotNetRuntimeMetricsRegistry.ContextName,
                     Name = "dotnet_build_info",
                     Tags = new MetricTags(
                         keys: new[] {"version", "target_framework", "runtime_version", "os_version", "process_architecture"},
@@ -103,7 +103,7 @@ namespace AppMetrics.DotNetRuntime
             {
                 var cpuCount = new GaugeOptions()
                 {
-                    Context = "DotNetRuntime",
+                    Context = DotNetRuntimeMetricsRegistry.ContextName,
                     Name = "process_cpu_count"
                 };
                 
