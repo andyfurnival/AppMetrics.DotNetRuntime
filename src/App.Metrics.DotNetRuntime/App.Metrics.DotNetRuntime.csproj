@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <PromMajorVersion Condition="$(PromMajorVersion) == ''">3</PromMajorVersion>
         <RootNamespace>App.Metrics.DotNetRuntime</RootNamespace>
         <AssemblyName>App.Metrics.DotNetRuntime</AssemblyName>
         <PackageId>App.Metrics.DotNetRuntime</PackageId>
-        <Version>1.0.0</Version>
+        <Version>1.0.1</Version>
         <Authors>Seif Attar</Authors>
         <PackageTags>App.Metrics runtime metrics gc jit threadpool contention stats</PackageTags>
         <PackageProjectUrl>https://github.com/opentable/AppMetrics.DotNetRuntime</PackageProjectUrl>
