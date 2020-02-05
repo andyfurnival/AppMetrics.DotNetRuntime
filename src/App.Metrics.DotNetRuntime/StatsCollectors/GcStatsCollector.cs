@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using App.Metrics.DotNetRuntime.EventSources;
 using App.Metrics.DotNetRuntime.StatsCollectors.Util;
+using App.Metrics.Gauge;
+using App.Metrics.Timer;
 
 namespace App.Metrics.DotNetRuntime.StatsCollectors
 {
@@ -32,15 +34,15 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
             x => (uint) x.Payload[0],
             x => new GcData((uint) x.Payload[1], (DotNetRuntimeEventSource.GCType) x.Payload[3]));
 
-        private readonly EventPairTimer<int> _gcPauseEventTimer = new EventPairTimer<int>(
+        private readonly EventPairTimer<int, DateTime> _gcPauseEventTimer = new EventPairTimer<int, DateTime>(
             EventIdSuspendEEStart,
             EventIdRestartEEStop,
             // Suspensions/ Resumptions are always done sequentially so there is no common value to match events on. Return a constant value as the event id.
-            x => 1);
+            x => 1,
+            (e) => e.TimeStamp);
 
         private readonly Dictionary<DotNetRuntimeEventSource.GCReason, string> _gcReasonToLabels = LabelGenerator.MapEnumToLabelValues<DotNetRuntimeEventSource.GCReason>();
-        private readonly Ratio _gcCpuRatio = Ratio.ProcessTotalCpu();
-        private readonly Ratio _gcPauseRatio = Ratio.ProcessTime();
+        private readonly ProcessTotalCpuTimer _gcCpuProcessTotalCpuTimer = ProcessTotalCpuTimer.ProcessTotalCpu();
         private readonly IMetrics _metrics;
 
         public GcStatsCollector(IMetrics metrics)
@@ -82,13 +84,17 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
                 return;
             }
 
-            if (_gcPauseEventTimer.TryGetDuration(e, out var pauseDuration) == DurationResult.FinalWithDuration)
+            if (_gcPauseEventTimer.TryGetDuration(e, out var pauseDuration, out var startEventData) == DurationResult.FinalWithDuration)
             {
-                var gcPauseMilliSecondsHistogram =
+                var timeSinceEventStarted = DateTime.UtcNow - startEventData;
+                var gcPauseMilliSecondsTimer =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcPauseMilliSeconds);
-                 gcPauseMilliSecondsHistogram.Record(pauseDuration.Ticks * 100, TimeUnit.Nanoseconds);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio, _gcPauseRatio.CalculateConsumedRatio(gcPauseMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
-                return;
+                 gcPauseMilliSecondsTimer.Record(pauseDuration.Ticks * 100, TimeUnit.Nanoseconds);
+                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcPauseRatio,
+                     () => new RatioGauge(
+                         () => gcPauseMilliSecondsTimer.GetValueOrDefault().Histogram.LastValue/NanosPerMilliSecond,
+                         () => timeSinceEventStarted.TotalMilliseconds));
+                 return;
             }
 
             if (e.EventId == EventIdGcStart)
@@ -98,10 +104,16 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
 
             if (_gcEventTimer.TryGetDuration(e, out var gcDuration, out var gcData) == DurationResult.FinalWithDuration)
             {
-                var gcCollectionMilliSecondsHistogram =
+                var gcCollectionMilliSecondsTimer =
                     _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.GcCollectionMilliSeconds);
-                gcCollectionMilliSecondsHistogram.Record(gcDuration.Ticks * 100, TimeUnit.Nanoseconds);
-                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, _gcCpuRatio.CalculateConsumedRatio(gcCollectionMilliSecondsHistogram.CurrentTime()/NanosPerMilliSecond));
+                gcCollectionMilliSecondsTimer.Record(gcDuration.Ticks * 100, TimeUnit.Nanoseconds);
+
+                _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, () =>
+                {
+                    return new RatioGauge(
+                        () => gcCollectionMilliSecondsTimer.GetValueOrDefault().Histogram.LastValue/NanosPerMilliSecond,
+                        () => _gcCpuProcessTotalCpuTimer.GetElapsedTime());
+                });
             }
         }
 
