@@ -6,7 +6,7 @@ using App.Metrics.DotNetRuntime.StatsCollectors;
 namespace App.Metrics.DotNetRuntime
 {
     /// <summary>
-    /// Configures what .NET core runtime metrics will be collected. 
+    /// Configures what .NET core runtime metrics will be collected.
     /// </summary>
     public static class DotNetRuntimeStatsBuilder
     {
@@ -26,7 +26,7 @@ namespace App.Metrics.DotNetRuntime
         }
 
         /// <summary>
-        /// Allows you to customize the types of metrics collected. 
+        /// Allows you to customize the types of metrics collected.
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns></returns>
