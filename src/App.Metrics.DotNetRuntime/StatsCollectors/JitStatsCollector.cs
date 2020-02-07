@@ -22,7 +22,7 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
 
         private readonly EventPairTimer<ulong> _eventPairTimer;
 
-        private readonly ProcessTotalCpuTimer _jitCpuProcessTotalCpuTimer = ProcessTotalCpuTimer.ProcessTotalCpu();
+        private readonly ProcessTotalCpuTimer _jitCpuProcessTotalCpuTimer = new ProcessTotalCpuTimer();
 
         public JitStatsCollector(IMetrics metrics)
         {
@@ -49,12 +49,15 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
 
                 _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal,
                     new MetricTags(DynamicLabel, dynamicLabelValue)).Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
+                _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal)
+                    .Record(duration.Ticks * 100, TimeUnit.Nanoseconds);
 
                 var methodsJittedMsTotalCounter = _metrics.Provider.Timer.Instance(DotNetRuntimeMetricsRegistry.Timers.MethodsJittedMilliSecondsTotal);
+                _jitCpuProcessTotalCpuTimer.Calculate();
                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.CpuRatio,
                     () => new RatioGauge(
-                        () => methodsJittedMsTotalCounter.GetValueOrDefault().Histogram.LastValue/NanosPerMilliSecond,
-                        _jitCpuProcessTotalCpuTimer.GetElapsedTime));
+                        () => methodsJittedMsTotalCounter.GetValueOrDefault().Histogram.LastValue,
+                        () => _jitCpuProcessTotalCpuTimer.ProcessTimeUsed.Ticks * 100.0));
             }
         }
     }

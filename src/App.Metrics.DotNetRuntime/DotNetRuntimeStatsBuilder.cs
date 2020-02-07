@@ -53,15 +53,13 @@ namespace App.Metrics.DotNetRuntime
 
             /// <summary>
             /// Finishes configuration and starts collecting .NET runtime metrics. Returns a <see cref="IDisposable"/> that
-            /// can be disposed of to stop metric collection. 
+            /// can be disposed of to stop metric collection.
             /// </summary>
             /// <returns></returns>
             public IDisposable StartCollecting()
             {
                 var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.ToImmutableHashSet(), _errorHandler, _debugMetrics, _metrics);
                 runtimeStatsCollector.RegisterMetrics(_metrics);
-           // Seif: what to do with this?? doesnt look like we have a similar hook in appmetrics
-           // metrics.AddBeforeCollectCallback(runtimeStatsCollector.UpdateMetrics);
                 return runtimeStatsCollector;
             }
 
@@ -140,7 +138,7 @@ namespace App.Metrics.DotNetRuntime
             /// <remarks>
             /// Enabling debugging will emit two metrics:
             /// 1. dotnet_debug_events_total - tracks the volume of events being processed by each stats collectorC
-            /// 2. dotnet_debug_cpu_seconds_total - tracks (roughly) the amount of CPU consumed by each stats collector.  
+            /// 2. dotnet_debug_cpu_seconds_total - tracks (roughly) the amount of CPU consumed by each stats collector.
             /// </remarks>
             /// <param name="generateDebugMetrics"></param>
             /// <returns></returns>

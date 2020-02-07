@@ -8,36 +8,35 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors.Util
     /// </summary>
     public class ProcessTotalCpuTimer
     {
-        private readonly Func<TimeSpan> _getElapsedTime;
-        private TimeSpan _lastProcessTime;
+        private TimeSpan _lastProcesssorUsedTime;
+        private DateTime _timeOfLastCollection;
+        private Process _process;
 
-        internal ProcessTotalCpuTimer(Func<TimeSpan> getElapsedTime)
+        internal ProcessTotalCpuTimer()
         {
-            _getElapsedTime = getElapsedTime;
-            _lastProcessTime = _getElapsedTime();
+            _process = Process.GetCurrentProcess();
+            _lastProcesssorUsedTime = GetProcessorTime();
+            _timeOfLastCollection = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Calculates the ratio of CPU time consumed by an activity.
-        /// </summary>
-        /// <returns></returns>
-        public static ProcessTotalCpuTimer ProcessTotalCpu()
+        private TimeSpan GetProcessorTime()
         {
-            var p = Process.GetCurrentProcess();
-            return new ProcessTotalCpuTimer(() =>
-            {
-                p.Refresh();
-                return p.TotalProcessorTime;
-            });
+            return _process.TotalProcessorTime;
         }
 
-        public double GetElapsedTime()
+        public void Calculate()
         {
-            var currentProcessTime = _getElapsedTime();
-            var consumedProcessTime = currentProcessTime - _lastProcessTime;
+            var currentProcessTime = GetProcessorTime();
+            ProcessTimeUsed = currentProcessTime - _lastProcesssorUsedTime;
+            _lastProcesssorUsedTime = currentProcessTime;
 
-            _lastProcessTime = currentProcessTime;
-            return consumedProcessTime.TotalMilliseconds;
+            var now = DateTime.UtcNow;
+            var timeElapsed = now.Subtract(_timeOfLastCollection).TotalMilliseconds;
+            _timeOfLastCollection = DateTime.UtcNow;
+            ProcessCpuUsedRatio = ProcessTimeUsed.TotalMilliseconds / (Environment.ProcessorCount * timeElapsed);
         }
+
+        public double ProcessCpuUsedRatio { get; private set; }
+        public TimeSpan ProcessTimeUsed { get; private set; }
     }
 }

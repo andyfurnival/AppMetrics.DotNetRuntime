@@ -1,26 +1,28 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using App.Metrics.DotNetRuntime.StatsCollectors;
 using App.Metrics.Gauge;
 
 namespace App.Metrics.DotNetRuntime
 {
-    internal sealed class DotNetRuntimeStatsCollector : 
+    internal sealed class DotNetRuntimeStatsCollector :
         IDisposable
 
     {
         private static readonly Dictionary<IMetrics, DotNetRuntimeStatsCollector> Instances = new Dictionary<IMetrics, DotNetRuntimeStatsCollector>();
-        
+
         private DotNetEventListener[] _eventListeners;
         private readonly ImmutableHashSet<IEventSourceStatsCollector> _statsCollectors;
         private readonly bool _enabledDebugging;
         private readonly Action<Exception> _errorHandler;
         private readonly IMetrics _metrics;
         private readonly object _lockInstance = new object();
+        private ProcessInfoStatsCollector _processInfoStatsCollector;
 
         internal DotNetRuntimeStatsCollector(ImmutableHashSet<IEventSourceStatsCollector> statsCollectors, Action<Exception> errorHandler, bool enabledDebugging, IMetrics metrics)
         {
@@ -46,9 +48,12 @@ namespace App.Metrics.DotNetRuntime
                 .Select(sc => new DotNetEventListener(sc, _errorHandler, _enabledDebugging, metrics))
                 .ToArray();
 
+            _processInfoStatsCollector = new ProcessInfoStatsCollector(metrics);
+            _processInfoStatsCollector.Start();
+
             SetupConstantMetrics(metrics);
         }
-        
+
         public void Dispose()
         {
             try
@@ -58,6 +63,8 @@ namespace App.Metrics.DotNetRuntime
 
                 foreach (var listener in _eventListeners)
                     listener?.Dispose();
+
+                _processInfoStatsCollector.Dispose();
             }
             finally
             {
@@ -67,10 +74,10 @@ namespace App.Metrics.DotNetRuntime
                 }
             }
         }
-        
+
         private void SetupConstantMetrics(IMetrics metrics)
         {
-            // These metrics are fairly generic in name, catch any exceptions on trying to create them 
+            // These metrics are fairly generic in name, catch any exceptions on trying to create them
             // in case AppMetrics or another plugin has registered them.
             try
             {
@@ -89,7 +96,7 @@ namespace App.Metrics.DotNetRuntime
                             RuntimeInformation.ProcessArchitecture.ToString()
                         })
                 };
-                
+
                 metrics.Measure.Gauge.SetValue(buildInfo, 1);
             }
             catch (Exception e)
@@ -104,7 +111,7 @@ namespace App.Metrics.DotNetRuntime
                     Context = DotNetRuntimeMetricsRegistry.ContextName,
                     Name = "process_cpu_count"
                 };
-                
+
                 metrics.Measure.Gauge.SetValue(cpuCount, Environment.ProcessorCount);
             }
             catch (Exception e)

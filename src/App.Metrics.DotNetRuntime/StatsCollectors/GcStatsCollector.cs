@@ -42,7 +42,7 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
             (e) => e.TimeStamp);
 
         private readonly Dictionary<DotNetRuntimeEventSource.GCReason, string> _gcReasonToLabels = LabelGenerator.MapEnumToLabelValues<DotNetRuntimeEventSource.GCReason>();
-        private readonly ProcessTotalCpuTimer _gcCpuProcessTotalCpuTimer = ProcessTotalCpuTimer.ProcessTotalCpu();
+        private readonly ProcessTotalCpuTimer _gcCpuProcessTotalCpuTimer = new ProcessTotalCpuTimer();
         private readonly IMetrics _metrics;
 
         public GcStatsCollector(IMetrics metrics)
@@ -110,9 +110,10 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
 
                 _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.GcCpuRatio, () =>
                 {
+                    _gcCpuProcessTotalCpuTimer.Calculate();
                     return new RatioGauge(
-                        () => gcCollectionMilliSecondsTimer.GetValueOrDefault().Histogram.LastValue/NanosPerMilliSecond,
-                        () => _gcCpuProcessTotalCpuTimer.GetElapsedTime());
+                        () => gcCollectionMilliSecondsTimer.GetValueOrDefault().Histogram.LastValue,
+                        () => _gcCpuProcessTotalCpuTimer.ProcessTimeUsed.Ticks*100);
                 });
             }
         }
