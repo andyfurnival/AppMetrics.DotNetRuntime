@@ -56,7 +56,7 @@ namespace App.Metrics.DotNetRuntime
             /// can be disposed of to stop metric collection.
             /// </summary>
             /// <returns></returns>
-            public IDisposable StartCollecting()
+            public DotNetRuntimeStatsCollector StartCollecting()
             {
                 var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.ToImmutableHashSet(), _errorHandler, _debugMetrics, _metrics);
                 runtimeStatsCollector.RegisterMetrics(_metrics);
