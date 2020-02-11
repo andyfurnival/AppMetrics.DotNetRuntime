@@ -10,7 +10,7 @@ using App.Metrics.Gauge;
 
 namespace App.Metrics.DotNetRuntime
 {
-    internal sealed class DotNetRuntimeStatsCollector :
+    public sealed class DotNetRuntimeStatsCollector :
         IDisposable
 
     {
