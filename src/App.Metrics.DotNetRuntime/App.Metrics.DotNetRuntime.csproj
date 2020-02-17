@@ -4,7 +4,7 @@
         <RootNamespace>App.Metrics.DotNetRuntime</RootNamespace>
         <AssemblyName>App.Metrics.DotNetRuntime</AssemblyName>
         <PackageId>App.Metrics.DotNetRuntime</PackageId>
-        <Version>1.1.1</Version>
+        <Version>1.1.2</Version>
         <Authors>Seif Attar</Authors>
         <PackageTags>App.Metrics runtime metrics gc jit threadpool contention stats</PackageTags>
         <PackageProjectUrl>https://github.com/opentable/AppMetrics.DotNetRuntime</PackageProjectUrl>
