@@ -41,25 +41,21 @@ namespace App.Metrics.DotNetRuntime
                 MeasurementUnit = Unit.Items,
                 ReportItemPercentages = false
             };
-            
-            EnableEventSources(collector);
+            EventSourceCreated += OnEventSourceCreated;
         }
-        
+
         internal bool StartedReceivingEvents { get; private set; }
 
-        private void EnableEventSources(IEventSourceStatsCollector forCollector)
+        private void OnEventSourceCreated(object sender, EventSourceCreatedEventArgs e)
         {
-            EventSourceCreated += (sender, e) =>
+            var es = e.EventSource;
+            if (es.Guid == _collector.EventSourceGuid)
             {
-                var es = e.EventSource;
-                if (es.Guid == forCollector.EventSourceGuid)
-                {
-                    EnableEvents(es, forCollector.Level, forCollector.Keywords);
-                    StartedReceivingEvents = true;
-                }
-            };
+                EnableEvents(es, _collector.Level, _collector.Keywords);
+                StartedReceivingEvents = true;
+            }
         }
-        
+
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             try
@@ -79,6 +75,12 @@ namespace App.Metrics.DotNetRuntime
             {
                 _errorHandler(e);
             }
+        }
+
+        public override void Dispose()
+        {
+            EventSourceCreated -= OnEventSourceCreated;
+            base.Dispose();
         }
     }
 }
