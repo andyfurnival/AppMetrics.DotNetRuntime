@@ -43,7 +43,7 @@ namespace App.Metrics.DotNetRuntime
             private Action<Exception> _errorHandler;
             private bool _debugMetrics;
 
-            internal HashSet<Func<IMetrics, IEventSourceStatsCollector>> StatsCollectors { get; } = new HashSet<Func<IMetrics, IEventSourceStatsCollector>>();
+            internal HashSet<FuncWithDerivedReturnType> StatsCollectors { get; } = new HashSet<FuncWithDerivedReturnType>(new FuncWithDerivedReturnType.Comparer());
 
             /// <summary>
             /// Finishes configuration and starts collecting .NET runtime metrics. Returns a <see cref="IDisposable"/> that
@@ -52,7 +52,7 @@ namespace App.Metrics.DotNetRuntime
             /// <returns></returns>
             public DotNetRuntimeStatsCollector StartCollecting(IMetrics metrics)
             {
-                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.Select(sc => sc(metrics)).ToImmutableHashSet(), _errorHandler, _debugMetrics, metrics);
+                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.Select(sc => sc.Function(metrics)).ToImmutableHashSet(), _errorHandler, _debugMetrics, metrics);
                 runtimeStatsCollector.RegisterMetrics();
                 return runtimeStatsCollector;
             }
@@ -63,7 +63,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithThreadPoolSchedulingStats()
             {
-                StatsCollectors.Add(metrics => new ThreadPoolSchedulingStatsCollector(metrics));
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new ThreadPoolSchedulingStatsCollector(metrics)));
                 return this;
             }
 
@@ -73,7 +73,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithThreadPoolStats()
             {
-                StatsCollectors.Add(metrics => new ThreadPoolStatsCollector(metrics));
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new ThreadPoolStatsCollector(metrics)));
                 return this;
             }
 
@@ -82,7 +82,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithContentionStats()
             {
-                StatsCollectors.Add(metrics => new ContentionStatsCollector(metrics));
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new ContentionStatsCollector(metrics)));
                 return this;
             }
 
@@ -92,7 +92,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithJitStats()
             {
-                StatsCollectors.Add(metrics => new JitStatsCollector(metrics));
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new JitStatsCollector(metrics)));
                 return this;
             }
 
@@ -103,18 +103,20 @@ namespace App.Metrics.DotNetRuntime
             /// <param name="histogramBuckets">Buckets for the GC collection and pause histograms</param>
             public Builder WithGcStats(double[] histogramBuckets = null)
             {
-                StatsCollectors.Add(metrics => new GcStatsCollector(metrics));
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new GcStatsCollector(metrics)));
                 return this;
             }
 
-            public Builder WithCustomCollector(IEventSourceStatsCollector statsCollector)
+            public Builder WithCustomCollector<TReturnType>(TReturnType statsCollector)
+                where TReturnType : IEventSourceStatsCollector
             {
-                StatsCollectors.Add(_ => statsCollector);
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(_ => statsCollector));
                 return this;
             }
-            public Builder WithCustomCollector(Func<IMetrics, IEventSourceStatsCollector> func)
+            public Builder WithCustomCollector<TReturnType>(Func<IMetrics, TReturnType> func)
+                where TReturnType : IEventSourceStatsCollector
             {
-                StatsCollectors.Add(func);
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(func));
                 return this;
             }
 
@@ -145,6 +147,34 @@ namespace App.Metrics.DotNetRuntime
             {
                 _debugMetrics = generateDebugMetrics;
                 return this;
+            }
+
+            internal class FuncWithDerivedReturnType
+            {
+                public class Comparer : IEqualityComparer<FuncWithDerivedReturnType>
+                {
+                    public bool Equals(FuncWithDerivedReturnType x, FuncWithDerivedReturnType y)
+                    {
+                        return x != null && y != null && x.ReturnType == y.ReturnType;
+                    }
+                    public int GetHashCode(FuncWithDerivedReturnType obj)
+                    {
+                        return obj.ReturnType.GetHashCode();
+                    }
+                }
+
+                public Func<IMetrics, IEventSourceStatsCollector> Function { get; }
+                public Type ReturnType { get; }
+
+                private FuncWithDerivedReturnType(Func<IMetrics, IEventSourceStatsCollector> function, Type returnType)
+                {
+                    Function = function;
+                    ReturnType = returnType;
+                }
+
+                public static FuncWithDerivedReturnType Create<TReturnType>(Func<IMetrics, TReturnType> function)
+                    where TReturnType : IEventSourceStatsCollector =>
+                    new FuncWithDerivedReturnType(m => function(m), typeof(TReturnType));
             }
         }
     }
