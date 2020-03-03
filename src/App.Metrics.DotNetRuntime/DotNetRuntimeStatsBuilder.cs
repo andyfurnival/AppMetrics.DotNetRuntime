@@ -43,7 +43,7 @@ namespace App.Metrics.DotNetRuntime
             private Action<Exception> _errorHandler;
             private bool _debugMetrics;
 
-            internal HashSet<Func<IMetrics, IEventSourceStatsCollector>> StatsCollectors { get; } = new HashSet<Func<IMetrics, IEventSourceStatsCollector>>(new TypeEquality<Func<IMetrics, IEventSourceStatsCollector>>());
+            internal HashSet<Func<IMetrics, IEventSourceStatsCollector>> StatsCollectors { get; } = new HashSet<Func<IMetrics, IEventSourceStatsCollector>>();
 
             /// <summary>
             /// Finishes configuration and starts collecting .NET runtime metrics. Returns a <see cref="IDisposable"/> that
@@ -140,19 +140,6 @@ namespace App.Metrics.DotNetRuntime
             {
                 _debugMetrics = generateDebugMetrics;
                 return this;
-            }
-
-            internal class TypeEquality<T> : IEqualityComparer<T>
-            {
-                public bool Equals(T x, T y)
-                {
-                    return x.GetType() == y.GetType();
-                }
-
-                public int GetHashCode(T obj)
-                {
-                    return obj.GetType().GetHashCode();
-                }
             }
         }
     }
