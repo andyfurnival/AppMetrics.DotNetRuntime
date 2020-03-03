@@ -8,14 +8,14 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors.Util
     /// </summary>
     public class ProcessTotalCpuTimer
     {
-        private TimeSpan _lastProcesssorUsedTime;
+        private TimeSpan _lastProcessorUsedTime;
         private DateTime _timeOfLastCollection;
         private Process _process;
 
         internal ProcessTotalCpuTimer()
         {
             _process = Process.GetCurrentProcess();
-            _lastProcesssorUsedTime = GetProcessorTime();
+            _lastProcessorUsedTime = GetProcessorTime();
             _timeOfLastCollection = DateTime.UtcNow;
         }
 
@@ -27,8 +27,8 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors.Util
         public void Calculate()
         {
             var currentProcessTime = GetProcessorTime();
-            ProcessTimeUsed = currentProcessTime - _lastProcesssorUsedTime;
-            _lastProcesssorUsedTime = currentProcessTime;
+            ProcessTimeUsed = currentProcessTime - _lastProcessorUsedTime;
+            _lastProcessorUsedTime = currentProcessTime;
 
             var now = DateTime.UtcNow;
             var timeElapsed = now.Subtract(_timeOfLastCollection).TotalMilliseconds;

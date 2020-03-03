@@ -42,7 +42,7 @@ namespace AspNetCoreExample
             metrics.Measure.Counter.Increment(new CounterOptions(){Name = "test-counter", Context = "some-context"});
             if (Environment.GetEnvironmentVariable("NOMON") == null)
             {
-                Console.WriteLine("Enabling prometheus-net.DotNetStats...");
+                Console.WriteLine("Enabling App.Metrics.DotNetStats...");
 
                 DotNetRuntimeStatsBuilder.Customize(metrics)
                     .WithThreadPoolSchedulingStats()
@@ -50,7 +50,7 @@ namespace AspNetCoreExample
                     .WithGcStats()
                     .WithJitStats()
                     .WithThreadPoolStats()
-                    .WithErrorHandler(ex => Console.WriteLine("ERROR: " + ex.ToString()))
+                    .WithErrorHandler(ex => Console.WriteLine($"ERROR: {ex}"))
                     .WithDebuggingMetrics(true)
                     .StartCollecting();
             }
