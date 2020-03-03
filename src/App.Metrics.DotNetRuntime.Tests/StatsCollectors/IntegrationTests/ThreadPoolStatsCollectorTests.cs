@@ -32,7 +32,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
             Assert.That(() => GetGauage(DotNetRuntimeMetricsRegistry.Gauges.NumThreads.Name).Value, 
                 Is.GreaterThanOrEqualTo(Environment.ProcessorCount).After(2000, 10));
             Assert.That(() => GetMeter(DotNetRuntimeMetricsRegistry.Meters.AdjustmentsTotal.Name, "reason:climbing_move").Value.Count,
-                Is.GreaterThanOrEqualTo(1).After(2100, 10));
+                Is.GreaterThanOrEqualTo(1).After(2000 + (int) (2000 * 0.1D), 10));
         }
         
         [Test]
