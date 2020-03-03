@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using App.Metrics.DotNetRuntime.StatsCollectors;
+using System.Linq;
 
 namespace App.Metrics.DotNetRuntime
 {
@@ -11,13 +12,13 @@ namespace App.Metrics.DotNetRuntime
     public static class DotNetRuntimeStatsBuilder
     {
         /// <summary>
-        /// Includes all available .NET runtime metrics by default. Call <see cref="Builder.StartCollecting()"/>
+        /// Includes all available .NET runtime metrics by default. Call <see cref="Builder.StartCollecting(IMetrics)"/>
         /// to begin collecting metrics.
         /// </summary>
         /// <returns></returns>
-        public static Builder Default(IMetrics metrics)
+        public static Builder Default()
         {
-            return Customize(metrics)
+            return Customize()
                 .WithContentionStats()
                 .WithJitStats()
                 .WithThreadPoolSchedulingStats()
@@ -28,38 +29,31 @@ namespace App.Metrics.DotNetRuntime
         /// <summary>
         /// Allows you to customize the types of metrics collected.
         /// </summary>
-        /// <param name="metrics"></param>
         /// <returns></returns>
         /// <remarks>
-        /// Include specific .NET runtime metrics by calling the WithXXX() methods and then call <see cref="Builder.StartCollecting()"/>
+        /// Include specific .NET runtime metrics by calling the WithXXX() methods and then call <see cref="Builder.StartCollecting(IMetrics)"/>
         /// </remarks>
-        public static Builder Customize(IMetrics metrics)
+        public static Builder Customize()
         {
-            return new Builder(metrics);
+            return new Builder();
         }
 
         public class Builder
         {
-            private readonly IMetrics _metrics;
             private Action<Exception> _errorHandler;
             private bool _debugMetrics;
 
-            public Builder(IMetrics metrics)
-            {
-                _metrics = metrics;
-            }
-
-            internal HashSet<IEventSourceStatsCollector> StatsCollectors { get; } = new HashSet<IEventSourceStatsCollector>(new TypeEquality<IEventSourceStatsCollector>());
+            internal HashSet<Func<IMetrics, IEventSourceStatsCollector>> StatsCollectors { get; } = new HashSet<Func<IMetrics, IEventSourceStatsCollector>>(new TypeEquality<Func<IMetrics, IEventSourceStatsCollector>>());
 
             /// <summary>
             /// Finishes configuration and starts collecting .NET runtime metrics. Returns a <see cref="IDisposable"/> that
             /// can be disposed of to stop metric collection.
             /// </summary>
             /// <returns></returns>
-            public DotNetRuntimeStatsCollector StartCollecting()
+            public DotNetRuntimeStatsCollector StartCollecting(IMetrics metrics)
             {
-                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.ToImmutableHashSet(), _errorHandler, _debugMetrics, _metrics);
-                runtimeStatsCollector.RegisterMetrics(_metrics);
+                var runtimeStatsCollector = new DotNetRuntimeStatsCollector(StatsCollectors.Select(sc => sc(metrics)).ToImmutableHashSet(), _errorHandler, _debugMetrics, metrics);
+                runtimeStatsCollector.RegisterMetrics();
                 return runtimeStatsCollector;
             }
 
@@ -69,7 +63,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithThreadPoolSchedulingStats()
             {
-                StatsCollectors.Add(new ThreadPoolSchedulingStatsCollector(_metrics));
+                StatsCollectors.Add(metrics => new ThreadPoolSchedulingStatsCollector(metrics));
                 return this;
             }
 
@@ -79,7 +73,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithThreadPoolStats()
             {
-                StatsCollectors.Add(new ThreadPoolStatsCollector(_metrics));
+                StatsCollectors.Add(metrics => new ThreadPoolStatsCollector(metrics));
                 return this;
             }
 
@@ -88,7 +82,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithContentionStats()
             {
-                StatsCollectors.Add(new ContentionStatsCollector(_metrics));
+                StatsCollectors.Add(metrics => new ContentionStatsCollector(metrics));
                 return this;
             }
 
@@ -98,7 +92,7 @@ namespace App.Metrics.DotNetRuntime
             /// </summary>
             public Builder WithJitStats()
             {
-                StatsCollectors.Add(new JitStatsCollector(_metrics));
+                StatsCollectors.Add(metrics => new JitStatsCollector(metrics));
                 return this;
             }
 
@@ -109,13 +103,13 @@ namespace App.Metrics.DotNetRuntime
             /// <param name="histogramBuckets">Buckets for the GC collection and pause histograms</param>
             public Builder WithGcStats(double[] histogramBuckets = null)
             {
-                StatsCollectors.Add(new GcStatsCollector(_metrics));
+                StatsCollectors.Add(metrics => new GcStatsCollector(metrics));
                 return this;
             }
 
             public Builder WithCustomCollector(IEventSourceStatsCollector statsCollector)
             {
-                StatsCollectors.Add(statsCollector);
+                StatsCollectors.Add(_ => statsCollector);
                 return this;
             }
 
