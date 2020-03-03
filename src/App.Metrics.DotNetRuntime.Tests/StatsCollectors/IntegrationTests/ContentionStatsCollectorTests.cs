@@ -49,7 +49,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
 
             // arrange
             const int numThreads = 10;
-            const int sleepForMs = 50;
+            const int sleepForMs = 100;
             var key = new object();
             
             // Increase the min. thread pool size so that when we use Thread.Sleep, we don't run into scheduling delays
