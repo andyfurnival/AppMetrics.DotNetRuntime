@@ -58,8 +58,7 @@ namespace AppMetrics.DotNetRuntime.Tests.StatsCollectors.IntegrationTests
                 {
                     lock (key)
                     {
-                        Task.Delay(TimeSpan.FromMilliseconds(sleepForMs)).GetAwaiter().GetResult();
-                        //Thread.Sleep(TimeSpan.FromMilliseconds(sleepForMs));
+                        Thread.Sleep(TimeSpan.FromMilliseconds(sleepForMs));
                     }        
                 }));
             
