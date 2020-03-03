@@ -112,6 +112,11 @@ namespace App.Metrics.DotNetRuntime
                 StatsCollectors.Add(_ => statsCollector);
                 return this;
             }
+            public Builder WithCustomCollector(Func<IMetrics, IEventSourceStatsCollector> func)
+            {
+                StatsCollectors.Add(func);
+                return this;
+            }
 
             /// <summary>
             /// Specifies a function to call when an exception occurs within the .NET stats collectors.
