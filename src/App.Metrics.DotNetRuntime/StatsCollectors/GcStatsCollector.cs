@@ -60,7 +60,7 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
             {
                 const uint lohHeapFlag = 0x1;
                 var heapLabelValue = ((uint) e.Payload[1] & lohHeapFlag) == lohHeapFlag ? "loh" : "soh";
-                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.AllocatedBytes, new MetricTags("heap", heapLabelValue), (uint)e.Payload[0]);
+                _metrics.Measure.Meter.Mark(DotNetRuntimeMetricsRegistry.Meters.AllocatedBytes, new MetricTags("heap", heapLabelValue), Convert.ToInt64((UInt64)e.Payload[3]));
                 return;
             }
 
