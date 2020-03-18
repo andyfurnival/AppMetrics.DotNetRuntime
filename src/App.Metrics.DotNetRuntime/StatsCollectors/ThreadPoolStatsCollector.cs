@@ -50,7 +50,8 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
                 case EventIdIoThreadRetire:
                 case EventIdIoThreadUnretire:
                 case EventIdIoThreadTerminate:
-                    _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.NumIoThreads, (uint) e.Payload[1]);
+                    // doesn't look like these events are correctly emitted. disabling for now.
+                    //    _metrics.Measure.Gauge.SetValue(DotNetRuntimeMetricsRegistry.Gauges.NumIoThreads, (uint) e.Payload[1]);
                     return;
             }
         }
