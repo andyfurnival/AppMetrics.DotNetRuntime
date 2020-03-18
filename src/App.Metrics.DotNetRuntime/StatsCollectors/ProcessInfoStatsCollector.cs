@@ -8,16 +8,13 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
 {
     public class ProcessInfoStatsCollector : IDisposable
     {
-        private AppMetricsTaskScheduler _scheduler;
+        private AppMetricsTaskScheduler  _scheduler;
 
         public ProcessInfoStatsCollector(IMetrics metrics)
         {
             var cpuUsage = new ProcessTotalCpuTimer();
             _scheduler = new AppMetricsTaskScheduler(
-                    TimeSpan.FromMilliseconds(500),
-                    () =>
-                        Task.Run(
-                            () =>
+                    TimeSpan.FromMilliseconds(500),  () =>
                             {
                                 var process = Process.GetCurrentProcess();
                                 cpuUsage.Calculate();
@@ -38,7 +35,8 @@ namespace App.Metrics.DotNetRuntime.StatsCollectors
                                 metrics.Measure.Gauge.SetValue(ProcessMetricsRegistry.Gauges.SystemPagedMemorySize, () => process.PagedSystemMemorySize64);
                                 metrics.Measure.Gauge.SetValue(ProcessMetricsRegistry.Gauges.ThreadCount, () => process.Threads.Count);
                                 metrics.Measure.Gauge.SetValue(ProcessMetricsRegistry.Gauges.HandlesCount, () => process.HandleCount);
-                            }));
+                                return Task.CompletedTask;
+                            });
             _scheduler.Start();
         }
 
