@@ -44,7 +44,7 @@ namespace AspNetCoreExample
             {
                 Console.WriteLine("Enabling prometheus-net.DotNetStats...");
 
-                DotNetRuntimeStatsBuilder.Customize(metrics)
+                DotNetRuntimeStatsBuilder.Customize()
                     .WithThreadPoolSchedulingStats()
                     .WithContentionStats()
                     .WithGcStats()
@@ -52,7 +52,7 @@ namespace AspNetCoreExample
                     .WithThreadPoolStats()
                     .WithErrorHandler(ex => Console.WriteLine("ERROR: " + ex.ToString()))
                     .WithDebuggingMetrics(true)
-                    .StartCollecting();
+                    .StartCollecting(metrics);
             }
 
             app.UseHttpsRedirection();
