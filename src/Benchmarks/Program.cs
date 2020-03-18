@@ -55,7 +55,8 @@ namespace Benchmarks
             BenchmarkRunner.Run<TestBenchmark>(
                 DefaultConfig.Instance
                     .With(
-                        Job.Core
+                        Job.Default
+                            .With(CoreRuntime.Core31)
                             .WithLaunchCount(1)
                             .WithIterationTime(TimeInterval.FromMilliseconds(200))
                             .With(Platform.X64)
