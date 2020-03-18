@@ -29,7 +29,7 @@ namespace Benchmarks
             if (args.Length > 0 && args[0] == "metrics")
             {
                 var metrics = App.Metrics.AppMetrics.CreateDefaultBuilder().Build();
-                var collector = DotNetRuntimeStatsBuilder.Customize(metrics)
+                var collector = DotNetRuntimeStatsBuilder.Customize()
                     .WithContentionStats()
                     .WithThreadPoolStats()
                     .WithThreadPoolSchedulingStats();
@@ -41,7 +41,7 @@ namespace Benchmarks
                         
                 collector
                     .WithDebuggingMetrics(false)
-                    .StartCollecting();
+                    .StartCollecting(metrics);
             }
 
             var b2 = new byte[1024 * 1000];

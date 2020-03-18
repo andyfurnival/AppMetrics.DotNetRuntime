@@ -41,17 +41,17 @@ namespace App.Metrics.DotNetRuntime
             }
         }
 
-        public void RegisterMetrics(IMetrics metrics)
+        public void RegisterMetrics()
         {
             // Metrics have been registered, start the event listeners
             _eventListeners = _statsCollectors
-                .Select(sc => new DotNetEventListener(sc, _errorHandler, _enabledDebugging, metrics))
+                .Select(sc => new DotNetEventListener(sc, _errorHandler, _enabledDebugging, _metrics))
                 .ToArray();
 
-            _processInfoStatsCollector = new ProcessInfoStatsCollector(metrics);
+            _processInfoStatsCollector = new ProcessInfoStatsCollector(_metrics);
             _processInfoStatsCollector.Start();
 
-            SetupConstantMetrics(metrics);
+            SetupConstantMetrics(_metrics);
         }
 
         public void Dispose()
