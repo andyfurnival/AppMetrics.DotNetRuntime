@@ -23,6 +23,7 @@ namespace App.Metrics.DotNetRuntime
                 .WithJitStats()
                 .WithThreadPoolSchedulingStats()
                 .WithThreadPoolStats()
+                .WithExceptionsStats()
                 .WithGcStats();
         }
 
@@ -104,6 +105,15 @@ namespace App.Metrics.DotNetRuntime
             public Builder WithGcStats(double[] histogramBuckets = null)
             {
                 StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new GcStatsCollector(metrics)));
+                return this;
+            }
+
+            /// <summary>
+            /// Include metrics recording the number of exception thrown (including catched exceptions).
+            /// </summary>
+            public Builder WithExceptionsStats()
+            {
+                StatsCollectors.Add(FuncWithDerivedReturnType.Create(metrics => new ExceptionStatsCollector(metrics)));
                 return this;
             }
 
