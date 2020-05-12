@@ -1,3 +1,4 @@
+using App.Metrics.Counter;
 using App.Metrics.Gauge;
 using App.Metrics.Meter;
 using App.Metrics.Timer;
@@ -72,6 +73,13 @@ namespace App.Metrics.DotNetRuntime
                 Context = ContextName,
                 Name = "gc_collection_reasons",
                 MeasurementUnit = Unit.Items
+            };
+
+            public static readonly MeterOptions ExceptionsThrown = new MeterOptions()
+            {
+                Context = ContextName,
+                Name = "exceptions_thrown",
+                MeasurementUnit = Unit.Errors
             };
         }
 
