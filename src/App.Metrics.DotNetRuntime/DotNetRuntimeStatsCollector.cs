@@ -94,7 +94,7 @@ namespace App.Metrics.DotNetRuntime
                             RuntimeInformation.FrameworkDescription,
                             RuntimeInformation.OSDescription,
                             RuntimeInformation.ProcessArchitecture.ToString(),
-                            Assembly.GetEntryAssembly()?.GetName().Version.ToString()
+                            Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion
                         })
                 };
 

@@ -10,9 +10,9 @@ using App.Metrics.DotNetRuntime.StatsCollectors.Util;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Environments;
-using BenchmarkDotNet.Horology;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
+using Perfolizer.Horology;
 
 
 namespace Benchmarks
@@ -56,7 +56,7 @@ namespace Benchmarks
                 DefaultConfig.Instance
                     .With(
                         Job.Default
-                            .With(CoreRuntime.Core31)
+                            .With(CoreRuntime.Core50)
                             .WithLaunchCount(1)
                             .WithIterationTime(TimeInterval.FromMilliseconds(200))
                             .With(Platform.X64)

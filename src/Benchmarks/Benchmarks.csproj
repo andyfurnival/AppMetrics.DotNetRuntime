@@ -2,10 +2,11 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net5.0</TargetFramework>
         <ServerGarbageCollection>true</ServerGarbageCollection>
         <Configurations>ReleaseV2;DebugV2;DebugV3;ReleaseV3</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <PropertyGroup Condition=" $(Configuration.EndsWith('V2')) ">
@@ -28,8 +29,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="App.Metrics" Version="3.2.0" />
-      <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
+      <PackageReference Include="App.Metrics" Version="4.2.0" />
+      <PackageReference Include="BenchmarkDotNet" Version="0.13.0" />
     </ItemGroup>
 
     <ItemGroup>

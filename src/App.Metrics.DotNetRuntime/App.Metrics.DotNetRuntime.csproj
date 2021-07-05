@@ -3,29 +3,29 @@
         <PromMajorVersion Condition="$(PromMajorVersion) == ''">3</PromMajorVersion>
         <RootNamespace>App.Metrics.DotNetRuntime</RootNamespace>
         <AssemblyName>App.Metrics.DotNetRuntime</AssemblyName>
-        <PackageId>App.Metrics.DotNetRuntime</PackageId>
+        <PackageId>SharpGaming.App.Metrics.DotNetRuntime</PackageId>
         <Version>2.1.0</Version>
-        <Authors>Seif Attar</Authors>
+        <Authors>Andy Furnival</Authors>
         <PackageTags>App.Metrics runtime metrics gc jit threadpool contention stats</PackageTags>
-        <PackageProjectUrl>https://github.com/opentable/AppMetrics.DotNetRuntime</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/andyfurnival/AppMetrics.DotNetRuntime</PackageProjectUrl>
         <Description>
             Exposes .NET core runtime metrics (GC, JIT, lock contention, thread pool) using the App.Metrics package.
         </Description>
         <PackageLicense>https://github.com/opentable/AppMetrics.DotNetRuntime/blob/master/LICENSE.txt</PackageLicense>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Configurations>Debug;Release</Configurations>
         <Platforms>AnyCPU</Platforms>
         <TargetFrameworks>net5.0;netcoreapp3.1;netstandard2.1</TargetFrameworks>
         <LangVersion>latestmajor</LangVersion>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <NoWarn>1701;1702;CS1591;</NoWarn>
+        <PackageVersion>2.2.1</PackageVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
-        <PackageReference Include="System.Collections.Immutable" Version="1.6.0" />
-    </ItemGroup>
-
     <ItemGroup>
-      <PackageReference Include="App.Metrics" Version="3.2.0" />
+      <PackageReference Include="App.Metrics" Version="4.2.0" />
+      <PackageReference Include="System.Collections.Immutable" Version="5.0.0" />
     </ItemGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
