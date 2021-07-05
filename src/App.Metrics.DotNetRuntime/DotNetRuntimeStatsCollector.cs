@@ -86,14 +86,15 @@ namespace App.Metrics.DotNetRuntime
                     Context = DotNetRuntimeMetricsRegistry.ContextName,
                     Name = "dotnet_build_info",
                     Tags = new MetricTags(
-                        keys: new[] {"version", "target_framework", "runtime_version", "os_version", "process_architecture"},
+                        keys: new[] {"version", "target_framework", "runtime_version", "os_version", "process_architecture", "app_version"},
                         values:new[]
                         {
                             this.GetType().Assembly.GetName().Version.ToString(),
                             Assembly.GetEntryAssembly().GetCustomAttribute<TargetFrameworkAttribute>().FrameworkName,
                             RuntimeInformation.FrameworkDescription,
                             RuntimeInformation.OSDescription,
-                            RuntimeInformation.ProcessArchitecture.ToString()
+                            RuntimeInformation.ProcessArchitecture.ToString(),
+                            Assembly.GetEntryAssembly()?.GetName().Version.ToString()
                         })
                 };
 
